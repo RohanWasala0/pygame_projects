@@ -1,33 +1,36 @@
 import pygame
+import random, math
 
 from .entities import Entity
 
 class Ball(Entity):
-    def __init__(self, tag: str, position: list, ) -> None:
-        super().__init__(tag, position)
+    def __init__(self, tag: str, position: list, color: pygame.color) -> None:
+        super().__init__(tag, position, color)
         
-        self.Y_movement_bool = (False, False)
-        self.X_movement_bool = (False, False)
-        
+        self.radius = 20
+        self.speed = 5
         self.velocity = [0, 0]
         
         self.InputChart = {
             pygame.KEYDOWN: {
-                #pygame.K_g : lambda: setattr(self, 'velocity', min(5, self.velocity[0] + 0.1)),
-                pygame.K_SPACE : lambda: setattr(self, 'velocity', [5, 0]),
+                pygame.K_SPACE : lambda: setattr(self, 'velocity', [int(random.choice([1, -1])), 0]),
             } 
         }
         
     def update(self) -> None:
-        movement_X = ((self.X_movement_bool[1] - self.X_movement_bool[0]) * 5) + self.velocity[0]
-        movement_Y = ((self.Y_movement_bool[1] - self.Y_movement_bool[0]) * 5) + self.velocity[1]
+        # Update ball's position based on current velocity
+        self.X_coordinate += self.speed * self.velocity[0]
+        self.Y_coordinate += self.speed * self.velocity[1]
         
-        self.X_coordinate += movement_X
-        self.Y_coordinate += movement_Y
+        # Handle boundary conditions for X-axis
+        # if self.X_coordinate <= 0 or self.X_coordinate >= 640:
+        #     self.velocity[0] *= -1
+        #     #self.X_coordinate = max(self.radius, min(640 - self.radius - 1, self.X_coordinate))  # Keep ball within screen
         
-        if self.X_coordinate < 0 or self.X_coordinate > 640:
-            self.velocity[0] = 0
-            self.X_coordinate = 320
+        # Handle boundary conditions for Y-axis
+        if self.Y_coordinate <=0 or self.Y_coordinate >= 480:
+            self.velocity[1] *= -1
+        
         return super().update()
     
     def render(self, surface: pygame.Surface) -> None:
@@ -36,3 +39,9 @@ class Ball(Entity):
         
         pygame.draw.circle(surface, self.Color, (self.X_coordinate, self.Y_coordinate), 20)
         return super().render(surface)
+    
+    def change_angle(self, angles):
+        #Change the ball's direction to a random angle on collision with a paddle 
+        angle = random.uniform(math.radians(angles[0]), math.radians(angles[1]))
+        self.velocity[0] = math.cos(angle) 
+        self.velocity[1] = math.sin(angle)

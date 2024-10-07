@@ -5,31 +5,52 @@ from Script.entities import Entity
 from Script.Paddle import Paddle
 from Script.ball import Ball
 
-class Template:
+BLACK = (0,0,0)
+WIDTH, HEIGHT = 640, 480
+
+class Pong:
 
     def __init__(self, Screen_DIMENSIONS: list) -> None:
         pygame.init()
         pygame.display.set_caption("Game")
+        self.font20 = pygame.font.Font('SixtyfourConvergence-Regular-VariableFont_BLED,SCAN,XELA,YELA.ttf', 20)
 
         self.screen = pygame.display.set_mode((Screen_DIMENSIONS[0], Screen_DIMENSIONS[1]))
         self.fps = pygame.time.Clock()
+        self.player1_score, self.player2_score = 0, 0
 
-        self.player_1 = Paddle('player', (40, 240), [pygame.K_w, pygame.K_s])
-        self.player_1.Color = (255, 0, 0)
-        self.player_2 = Paddle('player', (600, 240), [pygame.K_UP, pygame.K_DOWN])
-        self.player_2.Color = (255, 0, 255)
-        self.ball = Ball('ball', (320, 240))
+        self.player_1 = Paddle('player', (40, 240), (255, 0, 0), [pygame.K_w, pygame.K_s])
+        self.player_2 = Paddle('player', (600, 240), (255, 0, 255), [pygame.K_UP, pygame.K_DOWN])
+        self.ball = Ball('ball', (320, 240), (0, 0, 255))
+    
+    def textComp(self, displayText: str, textColor: pygame.color, textPosition: list = [0,0]):
+        text = self.font20.render(displayText, True, textColor)
+        textrect = text.get_rect()
+        textrect.center = textPosition
+        self.screen.blit(text, textrect)
         
     def run(self, GAME_FPS: int):
         while True:
             self.fps.tick(GAME_FPS)
             #Render
             self.screen.fill((233, 255, 31))
+            
             self.player_1.render(self.screen)
             self.player_2.render(self.screen)
             self.ball.render(self.screen)
-            pygame.draw.line(self.screen, (0,0,0), (320, 0), (320, 480))
-            pygame.draw.line(self.screen, (0,0,0), (0,240), (640, 240))
+            
+            pygame.draw.line(self.screen, BLACK, (WIDTH/2, 0), (WIDTH/2, HEIGHT))
+            pygame.draw.line(self.screen, BLACK, (0, HEIGHT/2), (WIDTH, HEIGHT/2))
+            
+            
+            self.textComp(f'Player1: {self.player1_score} -- Player2: {self.player2_score}', BLACK, [320, 120])
+            
+            grey = pygame.Color(100, 100, 100)
+            grey.a = 2
+            
+            menu = pygame.Rect(0, 0, 620, 460 )
+            menu.center = (WIDTH/2, HEIGHT/2)
+            pygame.draw.rect(self.screen, grey, menu)
             
             #Handle Input
             for event in pygame.event.get():
@@ -41,28 +62,32 @@ class Template:
                 self.ball.handle(event)
             
             #game conditions
-            if self.player_2.collision_box.colliderect(self.ball.collision_box):
-                self.ball.velocity = [-5, 0]
-            elif self.player_1.collision_box.colliderect(self.ball.collision_box):
-                self.ball.velocity = [5, 0]
+            # bounce in random direction after hitting a paddle
+            if self.ball.X_coordinate >= self.player_1.X_coordinate or self.ball.X_coordinate < self.player_2.X_coordinate:
+                if self.player_2.collision_box.colliderect(self.ball.collision_box):
+                    self.ball.velocity[0] *= -1
+                    self.ball.change_angle([90, 270])
+                elif self.player_1.collision_box.colliderect(self.ball.collision_box):
+                    self.ball.velocity[0] *= -1
+                    self.ball.change_angle([270, 450])
+            
+            #score counting logic
+            if self.ball.X_coordinate <= 0:
+                self.ball.velocity = [0,0]
+                self.ball.X_coordinate, self.ball.Y_coordinate = 320, 240
+                self.player2_score += 1
+            elif self.ball.X_coordinate >= 640:
+                self.ball.velocity = [0,0]
+                self.ball.X_coordinate, self.ball.Y_coordinate = 320, 240
+                self.player1_score += 1
                 
             #Update 
             self.player_1.update()
             self.player_2.update()
             self.ball.update()
-            
-            
-            # if self.player_1.collision_box.colliderect(self.collision_area):
-            #     #print("collided")
-            #     pygame.draw.rect(self.screen, (0, 100, 255), self.collision_area)
-            # elif self.player_2.collision_box.colliderect(self.collision_area):
-            #     pygame.draw.rect(self.screen, (0, 255, 0), self.collision_area)
-            # else:
-            #     #print("collided")
-            #     pygame.draw.rect(self.screen, (0, 50, 155), self.collision_area)
                 
             pygame.display.update()
             
             
             
-Template(Screen_DIMENSIONS=(640, 480)).run(GAME_FPS=60)
+Pong(Screen_DIMENSIONS=(640, 480)).run(GAME_FPS=60)

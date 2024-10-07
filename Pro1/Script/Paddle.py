@@ -3,13 +3,14 @@ import pygame
 from .entities import Entity
 
 class Paddle(Entity):
-    def __init__(self, tag: str, position: list, input_keys: list) -> None:
-        super().__init__(tag, position)
+    def __init__(self, tag: str, position: list, color: pygame.color, input_keys: list) -> None:
+        super().__init__(tag, position, color)
         
         self.Y_movement_bool = (False, False)
         self.X_movement_bool = (False, False)
         
         self.velocity = [0, 0]
+        self.speed = 5 
         
         self.InputChart = {
             pygame.KEYDOWN: {
@@ -23,19 +24,17 @@ class Paddle(Entity):
         }
     
     def update(self) -> None:
-        movement_X = ((self.X_movement_bool[1] - self.X_movement_bool[0]) * 5) + self.velocity[0]
-        movement_Y = ((self.Y_movement_bool[1] - self.Y_movement_bool[0]) * 5) + self.velocity[1]
+        self.velocity[0] = self.X_movement_bool[1] - self.X_movement_bool[0]
+        self.velocity[1] = self.Y_movement_bool[1] - self.Y_movement_bool[0]
         
-        self.X_coordinate += movement_X
-        self.Y_coordinate += movement_Y
+        self.X_coordinate += self.speed * self.velocity[0]
+        self.Y_coordinate += self.speed * self.velocity[1]
         
         return super().update()
     
     def render(self, surface: pygame.Surface) -> None:
-        self.collision_box = pygame.Rect((self.X_coordinate - 20, self.Y_coordinate - 100), (40, 200))
-        pygame.draw.rect(surface, (0,255, 0), self.collision_box)
-        # self.entity_rect = pygame.draw.circle(surface, self.Color, (self.X_coordinate, self.Y_coordinate), 20)
-        #self.entitySurface.blit(surface, (self.X_coordinate, self.Y_coordinate))
-        #self.collision_box = pygame.Rect(self.X_coordinate, self.Y_coordinate, self.entitySurface.get_width(), self.entitySurface.get_height())
+        self.collision_box = pygame.Rect((0,0), (40, 150))
+        self.collision_box.center = (self.X_coordinate, self.Y_coordinate)
+        pygame.draw.rect(surface, self.Color, self.collision_box)
         return super().render(surface)
     
