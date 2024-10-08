@@ -5,6 +5,9 @@ class Entity:
         self.X_coordinate = position[0]
         self.Y_coordinate = position[1]
         
+        self.velocity = [0, 0]
+        self.active = False
+        
         self.Color = color
         
         self.InputChart = {}
