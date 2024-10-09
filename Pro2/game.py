@@ -27,6 +27,7 @@ class Template:
         #game variables
         self.gapSize = 100
         self.genBool = False
+        self.genClock = 0
 
         #game objects
         self.bird = Bird('bird', (WIDTH/2, HEIGHT/2), RED, [pygame.K_SPACE])
@@ -37,10 +38,8 @@ class Template:
         self.genObstacles()
         
     def run(self, GAME_FPS: int):
-        #self.bird.velocity[1] = 1
+        last_time = pygame.time.get_ticks()
         while True:
-            #print(len(self.renderList_obstacle))
-            
             #Render
             self.screen.fill(SKI_BLUE)
             self.bird.render(self.screen)
@@ -62,20 +61,22 @@ class Template:
                         self.renderList_obstacle.pop(0)
                         self.renderList_obstacle.pop(0)
             
-            
+            current_time = pygame.time.get_ticks()
+            if current_time - last_time > 2000:
+                self.genObstacles()
+                last_time = current_time
                 
             #Update 
             self.bird.update()
             [x.update() for x in self.renderList_obstacle]
                 
             pygame.display.update()
-
             self.fps.tick(GAME_FPS)
     
     def genObstacles(self):
         x = random.randint(20, 240)
         y = HEIGHT - self.gapSize - x
-        print(f'x={x}, y={y}')
+        #print(f'x={x}, y={y}')
         self.renderList_obstacle.append(Obstacle('obstacle', (WIDTH, 0), GREEN, (50, x)))
         self.renderList_obstacle.append(Obstacle('obstacle', (WIDTH, 150 + x), GREEN, (50, y)))
     
