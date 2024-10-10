@@ -4,7 +4,7 @@ import random, math
 from .entities import Entity
 
 class Ball(Entity):
-    def __init__(self, tag: str, position: list, color: pygame.color) -> None:
+    def __init__(self, tag: str, position: list, color: tuple) -> None:
         super().__init__(tag, position, color)
         
         self.radius = 20
@@ -33,7 +33,7 @@ class Ball(Entity):
         
         return super().update()
     
-    def render(self, surface: pygame.Surface) -> None:
+    def render(self, surface) -> None:
         self.collision_box = pygame.Rect((self.X_coordinate - 20, self.Y_coordinate - 20), (40, 40))
         pygame.draw.rect(surface, (0,255, 0), self.collision_box)
         

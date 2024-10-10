@@ -1,11 +1,12 @@
 import sys
 import pygame
 
-from Script.entities import Entity
+from Script.Menu import Menu
 from Script.Paddle import Paddle
 from Script.ball import Ball
 
 BLACK = (0,0,0)
+GREY = (100, 100, 100)
 WIDTH, HEIGHT = 640, 480
 
 class Pong:
@@ -22,8 +23,9 @@ class Pong:
         self.player_1 = Paddle('player', (40, 240), (255, 0, 0), [pygame.K_w, pygame.K_s])
         self.player_2 = Paddle('player', (600, 240), (255, 0, 255), [pygame.K_UP, pygame.K_DOWN])
         self.ball = Ball('ball', (320, 240), (0, 0, 255))
+        self.menu = Menu('menu', (0,0), (*GREY, 128))
     
-    def textComp(self, displayText: str, textColor: pygame.color, textPosition: list = [0,0]):
+    def textComp(self, displayText: str, textColor: tuple, textPosition: list = [0,0]):
         text = self.font20.render(displayText, True, textColor)
         textrect = text.get_rect()
         textrect.center = textPosition
@@ -31,26 +33,18 @@ class Pong:
         
     def run(self, GAME_FPS: int):
         while True:
-            self.fps.tick(GAME_FPS)
             #Render
             self.screen.fill((233, 255, 31))
             
             self.player_1.render(self.screen)
             self.player_2.render(self.screen)
             self.ball.render(self.screen)
+            self.menu.render(self.screen, (WIDTH - 50, HEIGHT - 50))
             
             pygame.draw.line(self.screen, BLACK, (WIDTH/2, 0), (WIDTH/2, HEIGHT))
             pygame.draw.line(self.screen, BLACK, (0, HEIGHT/2), (WIDTH, HEIGHT/2))
             
-            
             self.textComp(f'Player1: {self.player1_score} -- Player2: {self.player2_score}', BLACK, [320, 120])
-            
-            grey = pygame.Color(100, 100, 100)
-            grey.a = 2
-            
-            menu = pygame.Rect(0, 0, 620, 460 )
-            menu.center = (WIDTH/2, HEIGHT/2)
-            pygame.draw.rect(self.screen, grey, menu)
             
             #Handle Input
             for event in pygame.event.get():
@@ -87,6 +81,7 @@ class Pong:
             self.ball.update()
                 
             pygame.display.update()
+            self.fps.tick(GAME_FPS)
             
             
             

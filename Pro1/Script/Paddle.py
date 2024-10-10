@@ -3,7 +3,7 @@ import pygame
 from .entities import Entity
 
 class Paddle(Entity):
-    def __init__(self, tag: str, position: list, color: pygame.color, input_keys: list) -> None:
+    def __init__(self, tag: str, position: list, color: tuple, input_keys: list) -> None:
         super().__init__(tag, position, color)
         
         self.Y_movement_bool = (False, False)
@@ -32,7 +32,7 @@ class Paddle(Entity):
         
         return super().update()
     
-    def render(self, surface: pygame.Surface) -> None:
+    def render(self, surface) -> None:
         self.collision_box = pygame.Rect((0,0), (40, 150))
         self.collision_box.center = (self.X_coordinate, self.Y_coordinate)
         pygame.draw.rect(surface, self.Color, self.collision_box)
