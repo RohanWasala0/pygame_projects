@@ -1,40 +1,50 @@
 import pygame
+from pygame.sprite import Group
 
 from .entities import Entity
 
-class Paddle(Entity):
-    def __init__(self, tag: str, position: list, color: tuple, input_keys: list) -> None:
-        super().__init__(tag, position, color)
+class Paddle(Entity, pygame.sprite.Sprite):
+    def __init__(self, 
+            groups: Group, 
+            tag: str, 
+            input_keys: list,
+            position: pygame.Vector2 = pygame.math.Vector2(), 
+            direction: pygame.Vector2 = pygame.math.Vector2(), 
+            entitySize: tuple = (0, 0), 
+            color: pygame.Color = pygame.Color('black')) -> None:
+        super().__init__(groups, tag, position, direction, entitySize, color)
+
+        self.speed = 5
         
-        self.Y_movement_bool = (False, False)
-        self.X_movement_bool = (False, False)
-        
-        self.velocity = [0, 0]
-        self.speed = 5 
-        
-        self.InputChart = {
+        self.inputChart = {
             pygame.KEYDOWN: {
-                input_keys[0] : lambda: setattr(self, "Y_movement_bool", (True, self.Y_movement_bool[1])),
-                input_keys[1] : lambda: setattr(self, "Y_movement_bool", (self.Y_movement_bool[0], True)),
+                input_keys[0] : lambda: setattr(self, "direction", pygame.Vector2(0, -1)),
+                input_keys[1] : lambda: setattr(self, "direction", pygame.Vector2(0, 1)),
                 },
             pygame.KEYUP: {
-                input_keys[0] : lambda: setattr(self, "Y_movement_bool", (False, self.Y_movement_bool[1])),
-                input_keys[1] : lambda: setattr(self, "Y_movement_bool", (self.Y_movement_bool[0], False)),
+                input_keys[0] : lambda: setattr(self, "direction", pygame.Vector2(0, 0)),
+                input_keys[1] : lambda: setattr(self, "direction", pygame.Vector2(0, 0)),
                 },
         }
-    
-    def update(self) -> None:
-        self.velocity[0] = self.X_movement_bool[1] - self.X_movement_bool[0]
-        self.velocity[1] = self.Y_movement_bool[1] - self.Y_movement_bool[0]
         
-        self.X_coordinate += self.speed * self.velocity[0]
-        self.Y_coordinate += self.speed * self.velocity[1]
+        self.image = pygame.Surface(size=self.entitySize).convert_alpha()
+        self.image.set_colorkey('black')
+        self.render()
         
+    def update(self):
+        self.position += self.direction * self.speed
+        
+        self.rect.center = self.position
         return super().update()
     
-    def render(self, surface) -> None:
-        self.collision_box = pygame.Rect((0,0), (40, 150))
-        self.collision_box.center = (self.X_coordinate, self.Y_coordinate)
-        pygame.draw.rect(surface, self.Color, self.collision_box)
-        return super().render(surface)
+    def render(self):
+        
+        self.rect = pygame.Rect((0,0), self.entitySize)
+        
+        pygame.draw.rect(surface=self.image, color=self.color, rect=self.rect)
+        self.rect = self.image.get_rect(center=self.position)
+        
+        return super().render()
+
+
     

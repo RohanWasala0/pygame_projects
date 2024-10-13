@@ -1,22 +1,34 @@
 import pygame
 
-class Entity:
-    def __init__(self, tag: str, position: list, color: tuple) -> None:
-        self.X_coordinate = position[0]
-        self.Y_coordinate = position[1]
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, 
+                groups: pygame.sprite.Group, 
+                tag: str, 
+                position: pygame.Vector2 = pygame.math.Vector2(), 
+                direction: pygame.Vector2 = pygame.math.Vector2(), 
+                entitySize: tuple = (0, 0), 
+                color: pygame.Color = pygame.Color('black')) -> None:
+        super().__init__(groups)
         
-        self.Color = color
+        self.tag = tag
+        self.position = position
+        self.direction = direction
+        self.entitySize = entitySize
+        self.color = color
         
-        self.InputChart = {}
+        self.inputChart = {}
         
-    def handle(self, event):
-        if event.type in self.InputChart:
-            if event.key in self.InputChart[event.type]:
-                self.InputChart[event.type][event.key]()
+    def handleInput(self, 
+                event: pygame.event) -> None:
         
-    def update(self, ) -> None:
+        if event.type in self.inputChart:
+            if event.key in self.inputChart[event.type]:
+                self.inputChart[event.type][event.key]()
+                
+    
+    def update(self):
         pass
+    
+    def render(self):
         
-    def render(self, surface) -> None:
-        pygame.draw.circle(surface, (0,0,0), (self.X_coordinate, self.Y_coordinate), 1)
-        
+        pass

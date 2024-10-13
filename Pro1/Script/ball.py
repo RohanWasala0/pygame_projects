@@ -1,47 +1,49 @@
 import pygame
 import random, math
 
+from pygame.sprite import Group
+
 from .entities import Entity
 
-class Ball(Entity):
-    def __init__(self, tag: str, position: list, color: tuple) -> None:
-        super().__init__(tag, position, color)
-        
-        self.radius = 20
+class Ball(Entity, pygame.sprite.Sprite):
+    def __init__(self, 
+            groups: Group, 
+            tag: str, 
+            position: pygame.Vector2 = pygame.math.Vector2(), 
+            direction: pygame.Vector2 = pygame.math.Vector2(), 
+            entitySize: tuple = (0, 0), 
+            color: pygame.Color = pygame.Color('black')) -> None:
+        super().__init__(groups, tag, position, direction, entitySize, color)
+
         self.speed = 5
-        self.velocity = [0, 0]
+        self.radius = 25
+        self.entitySize = (self.radius*2, self.radius*2)
         
-        self.InputChart = {
+        self.inputChart = {
             pygame.KEYDOWN: {
-                pygame.K_SPACE : lambda: setattr(self, 'velocity', [int(random.choice([1, -1])), 0]),
-            } 
+                pygame.K_SPACE: lambda: setattr(self, 'direction', pygame.math.Vector2(-1, 0)),
+            }
         }
         
-    def update(self) -> None:
-        # Update ball's position based on current velocity
-        self.X_coordinate += self.speed * self.velocity[0]
-        self.Y_coordinate += self.speed * self.velocity[1]
-        
-        # Handle boundary conditions for X-axis
-        # if self.X_coordinate <= 0 or self.X_coordinate >= 640:
-        #     self.velocity[0] *= -1
-        #     #self.X_coordinate = max(self.radius, min(640 - self.radius - 1, self.X_coordinate))  # Keep ball within screen
+        self.image = pygame.Surface(self.entitySize).convert_alpha()
+        self.image.set_colorkey("black")
+        self.render()
+    
+    def update(self):
+        self.position += self.direction * self.speed
         
         # Handle boundary conditions for Y-axis
-        if self.Y_coordinate <=0 or self.Y_coordinate >= 480:
-            self.velocity[1] *= -1
+        if self.position[1] <= 0 or self.position[1] >= pygame.display.get_window_size()[1]:
+            self.direction.y *= -1
         
+        self.rect.center = self.position
         return super().update()
     
-    def render(self, surface) -> None:
-        self.collision_box = pygame.Rect((self.X_coordinate - 20, self.Y_coordinate - 20), (40, 40))
-        pygame.draw.rect(surface, (0,255, 0), self.collision_box)
-        
-        pygame.draw.circle(surface, self.Color, (self.X_coordinate, self.Y_coordinate), 20)
-        return super().render(surface)
+    def render(self):
+        pygame.draw.circle(surface=self.image, color=self.color, center=(self.radius, self.radius), radius=self.radius)
+        self.rect = self.image.get_rect(center=self.position)
+        return super().render()
     
-    def change_angle(self, angles):
-        #Change the ball's direction to a random angle on collision with a paddle 
+    def change_angle(self, angles) -> None:
         angle = random.uniform(math.radians(angles[0]), math.radians(angles[1]))
-        self.velocity[0] = math.cos(angle) 
-        self.velocity[1] = math.sin(angle)
+        self.direction = pygame.math.Vector2(math.cos(angle), math.sin(angle))
