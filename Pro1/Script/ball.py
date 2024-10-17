@@ -11,31 +11,29 @@ class Ball(Entity, pygame.sprite.Sprite):
             tag: str, 
             position: pygame.Vector2 = pygame.math.Vector2(), 
             direction: pygame.Vector2 = pygame.math.Vector2(), 
-            entitySize: tuple = (0, 0), 
+            entitySize: int = 0, 
             color: pygame.Color = pygame.Color('black')) -> None:
         super().__init__(groups, tag, position, direction, entitySize, color)
 
         self.speed = 5
-        self.radius = 25
-        self.entitySize = (self.radius*2, self.radius*2)
+        self.radius = self.entitySize 
         
         self.inputChart = {
             pygame.KEYDOWN: {
-                pygame.K_SPACE: lambda: setattr(self, 'direction', pygame.math.Vector2(-1, 0)),
+                pygame.K_SPACE: lambda: setattr(self, 'direction', pygame.math.Vector2(random.choice([1, -1]), 0)),
             }
         }
         
-        self.image = pygame.Surface(self.entitySize).convert_alpha()
+        self.image = pygame.Surface((self.entitySize *2, self.entitySize *2)).convert_alpha()
         self.image.set_colorkey("black")
         self.render()
     
-    def update(self):
-        self.position += self.direction * self.speed
-        
+    def update(self):        
         # Handle boundary conditions for Y-axis
-        if self.position[1] <= 0 or self.position[1] >= pygame.display.get_window_size()[1]:
+        if self.position.y - self.radius <= 0 or self.position.y + self.radius >= pygame.display.get_window_size()[1]:
             self.direction.y *= -1
         
+        self.position += self.direction * self.speed        
         self.rect.center = self.position
         return super().update()
     
@@ -44,6 +42,13 @@ class Ball(Entity, pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=self.position)
         return super().render()
     
+    def reset(self):
+        self.direction = pygame.math.Vector2()
+        self.position = pygame.math.Vector2(tuple(x/2 for x in pygame.display.get_window_size()))
+        
     def change_angle(self, angles) -> None:
         angle = random.uniform(math.radians(angles[0]), math.radians(angles[1]))
-        self.direction = pygame.math.Vector2(math.cos(angle), math.sin(angle))
+        self.direction = pygame.math.Vector2(math.cos(angle), math.sin(angle)).normalize()
+
+
+
