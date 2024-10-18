@@ -15,7 +15,7 @@ class Ball(Entity, pygame.sprite.Sprite):
             color: pygame.Color = pygame.Color('black')) -> None:
         super().__init__(groups, tag, position, direction, entitySize, color)
 
-        self.hit = pygame.mixer.Sound('Pro1/Assets/hitHurt.wav')
+        self.hit = pygame.mixer.Sound('./Assets/hitHurt.wav')
         self.speed = 5
         self.radius = self.entitySize 
         self.lastTime = 0

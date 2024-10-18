@@ -9,7 +9,7 @@ from Script.Paddle import Paddle
 from Script.ball import Ball
 from Script.particles import Particles
 
-FONT_PATH = 'SixtyfourConvergence-Regular-VariableFont_BLED,SCAN,XELA,YELA.ttf'
+FONT_PATH = './SixtyfourConvergence-Regular-VariableFont_BLED,SCAN,XELA,YELA.ttf'
 #Colors
 BLACK = pygame.Color(0,0,0)
 BACKGROUND_BLACK = pygame.Color('#181C14')
@@ -36,8 +36,8 @@ class Pong:
         self.aiBool = True
         self.renderFirst =True
         
-        self.hit = pygame.mixer.Sound('Pro1/Assets/hitHurt.wav')
-        self.lose = pygame.mixer.Sound('Pro1/Assets/explosion.wav')
+        self.hit = pygame.mixer.Sound('./Assets/hitHurt.wav')
+        self.lose = pygame.mixer.Sound('./Assets/explosion.wav')
         
         self.scoreRect = pygame.Rect((100, 100), (320, 200))
         self.scoreRect.center = (WIDTH//2, 100)
