@@ -15,8 +15,10 @@ class Ball(Entity, pygame.sprite.Sprite):
             color: pygame.Color = pygame.Color('black')) -> None:
         super().__init__(groups, tag, position, direction, entitySize, color)
 
+        self.hit = pygame.mixer.Sound('Pro1/Assets/hitHurt.wav')
         self.speed = 5
         self.radius = self.entitySize 
+        self.lastTime = 0
         
         self.inputChart = {
             pygame.KEYDOWN: {
@@ -31,6 +33,7 @@ class Ball(Entity, pygame.sprite.Sprite):
     def update(self):        
         # Handle boundary conditions for Y-axis
         if self.position.y - self.radius <= 0 or self.position.y + self.radius >= pygame.display.get_window_size()[1]:
+            self.hit.play()
             self.direction.y *= -1
         
         self.position += self.direction * self.speed        
@@ -45,10 +48,13 @@ class Ball(Entity, pygame.sprite.Sprite):
     def reset(self):
         self.direction = pygame.math.Vector2()
         self.position = pygame.math.Vector2(tuple(x/2 for x in pygame.display.get_window_size()))
+
         
     def change_angle(self, angles) -> None:
         angle = random.uniform(math.radians(angles[0]), math.radians(angles[1]))
         self.direction = pygame.math.Vector2(math.cos(angle), math.sin(angle)).normalize()
+        
+
 
 
 

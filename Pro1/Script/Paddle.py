@@ -1,6 +1,6 @@
 import pygame
 from pygame.sprite import Group
-from random import uniform, random, randint
+from random import uniform, randint
 
 from .entities import Entity
 
@@ -12,14 +12,18 @@ class Paddle(Entity, pygame.sprite.Sprite):
             position: pygame.Vector2 = pygame.math.Vector2(), 
             direction: pygame.Vector2 = pygame.math.Vector2(), 
             entitySize: tuple = (0, 0), 
-            color: pygame.Color = pygame.Color('black')) -> None:
+            color: pygame.Color = pygame.Color('black'),
+            computerBool: bool = False) -> None:
         super().__init__(groups, tag, position, direction, entitySize, color)
 
+        self.computerBool = computerBool
         self.speed = 5
-        self.reaction_delay = 4
-        self.reaction_counter = 0
+        self.reactionDelay = uniform(0, 0.3)
         
-        self.inputChart = {
+        self._window_size = pygame.display.get_window_size()
+        
+        if not self.computerBool:
+            self.inputChart = {
             pygame.KEYDOWN: {
                 input_keys[0] : lambda: setattr(self, "direction", pygame.Vector2(0, -1)),
                 input_keys[1] : lambda: setattr(self, "direction", pygame.Vector2(0, 1)),
@@ -34,9 +38,17 @@ class Paddle(Entity, pygame.sprite.Sprite):
         self.image.set_colorkey('black')
         self.render()
         
-    def update(self):
-        self.position += self.direction * self.speed
+    def update(self, ballPosition: pygame.Vector2, ballDirection: pygame.Vector2):
+            
+        self.position.y = min(max(self.position.y, self.image.get_height() // 2), self._window_size[1] - self.image.get_height() // 2)
         
+        if self.computerBool:
+            #self.computerPaddle(ballPosition, ballDirection, 3)
+            #if ballPosition.x > pygame.display.get_window_size()[0]//2:
+            self.unbetable__computerpaddle(ballPosition)
+
+        else:
+            self.position += self.direction * self.speed
         self.rect.center = self.position
         return super().update()
     
@@ -49,78 +61,35 @@ class Paddle(Entity, pygame.sprite.Sprite):
         
         return super().render()
 
-    def computerPaddle(self, ballPosition, difficulty = 0):
-        # if self.reaction_counter < self.reaction_delay:
-        #     self.reaction_counter += 1
-        # else:
-        #     self.reaction_counter = 0
+    def unbetable__computerpaddle(self, ballPosition: pygame.Vector2):
+        Ppos = pygame.Vector2(pygame.display.get_window_size()[0] - 40, 
+                              self.position.y)
+        Bpos = pygame.Vector2(pygame.display.get_window_size()[0] - 40,      
+                              ballPosition.y)
+        self.position = Ppos.slerp(Bpos, 0.09)
+        
+    def computerPaddle(self, ballPosition: pygame.Vector2, ballDirection: pygame.Vector2, difficulty = 0):
+        #predicte the ball's y rather than manually assign it 
+        predicte_ballY = ballPosition.y + ballDirection.y* self.speed
+        
+        #random offset and reaction delay based on difficulty
+        offset = uniform(-difficulty, difficulty)
+        
+        #target position for the paddle with offset
+        targetY = predicte_ballY
+        distanceTo_target = targetY- self.position.y
+        # Does not work smoothly #lerp(linear interpolation) the paddle Y coord towards the targetY 
+        # self.position.y = pygame.math.lerp(targetY, self.position.y, reactionDelay)
+        
+        if distanceTo_target > self.reactionDelay:
+            directiony = 1
+        elif distanceTo_target < -self.reactionDelay:
+            directiony = -1
+        else:
+            directiony = 0
+        
+        self.direction.y = pygame.math.lerp(self.direction.y, directiony, randint(0, 10)/ 10)
             
-        #     if self.position.y < ballPosition.y:
-        #         self.position.y = min(self.speed, abs(self.position.y- ballPosition.y))
-        #     elif self.position.y > ballPosition.y:
-        #         self.position.y = min(self.speed, abs(self.position.y- ballPosition.y))
-                
         
-        #print(pygame.math.lerp(self.position.y, ballPosition.y, 0.6))
-        self.position.y = pygame.math.lerp(self.position.y , ballPosition.y, 0.2)
-        # #self.position.y = ballPosition.y
-        self.rect.center = self.position
-    
-    # def computerPaddle(self, ball, difficulty=0.1):
-    #     ball_y = ball.position.y
-    #     paddle_y = self.position.y
-    #     error_margin = randint(-20, 20)
+
         
-    #     if paddle_y < ball_y + error_margin:
-    #         self.direction = pygame.Vector2(0, 1)
-    #     elif paddle_y > ball_y + error_margin:
-    #         self.direction = pygame.Vector2(0, -1)
-    #     else:
-    #         self.direction = pygame.Vector2(0, 0)
-        
-    #     # Introduce difficulty: only update direction sometimes
-    #     if uniform(0, 1) > difficulty:
-    #         self.direction = pygame.Vector2(0, 0)
-
-    #     self.position += self.direction * self.speed
-    #     self.rect.center = self.position
-    #     return super().update()
-    
-    def computerPaddle(self, ballPosition, difficulty = 1):
-        """ Makes the paddle follow the ball with some imperfections. """
-        # Get the y position of the ball
-        ball_y = ballPosition.y
-        error_margin = randint(-20, 20)
-        # Introduce some randomness/inaccuracy based on difficulty
-        max_speed = self.speed * (difficulty + uniform(-0.2, 0.2))
-        
-        # Make the paddle "lazy" by only moving if the ball is a certain distance away
-        if abs(self.position.y - ball_y) > 10:
-            if self.position.y < ball_y + error_margin:
-                self.position += min(max_speed, ball_y - self.position.y) * pygame.Vector2(0, 1) # Move paddle down
-            elif self.position.y > ball_y + error_margin:
-                self.position += min(max_speed, self.position.y - ball_y) * pygame.Vector2(0, -1)# Move paddle up
-            else:
-                self.position += min(max_speed, self.position.y - ball_y) * pygame.Vector2()
-
-        # # Add additional randomness to simulate mistakes (lower difficulty makes bigger mistakes)
-        # if random.random() > self.difficulty:
-        #     self.position.y += random.uniform(-10, 10)  # Random nudge
-        self.rect.center = self.position
-        
-        #     predicted_ball_center_y = ball.position.y + ball.direction[1] * self.speed
-
-        # # Introduce random offset and reaction delay based on difficulty
-        # offset = random.uniform(-self.difficulty, self.difficulty)
-        # reaction_delay = random.uniform(0, self.difficulty / 10)
-
-        # # Target position for the paddle center with offset
-        # target_center_y = predicted_ball_center_y + offset
-
-        # # Move towards target position with speed and reaction delay
-        # if target_center_y > self.position.y + reaction_delay:
-        #     self.direction.y = 1
-        # elif target_center_y < self.position.y - reaction_delay:
-        #     self.direction.y = -1
-        # else:
-        #     self.direction.y = 0

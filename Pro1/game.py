@@ -34,12 +34,19 @@ class Pong:
         self.menuBool = False
         self.timerBool = False
         self.aiBool = True
+        self.renderFirst =True
+        
+        self.hit = pygame.mixer.Sound('Pro1/Assets/hitHurt.wav')
+        self.lose = pygame.mixer.Sound('Pro1/Assets/explosion.wav')
+        
+        self.scoreRect = pygame.Rect((100, 100), (320, 200))
+        self.scoreRect.center = (WIDTH//2, 100)
 
         #region Player
         self.paddleGroup = pygame.sprite.Group()
         self.player1 = Paddle(groups=self.paddleGroup, tag='player', position=pygame.math.Vector2(40, HEIGHT/2), entitySize=(40, 150), color=PADDLE_BROWN, input_keys=[pygame.K_w, pygame.K_s])
         self.player1_score = 0
-        self.player2 = Paddle(groups=self.paddleGroup, tag='player', position=pygame.math.Vector2(WIDTH - 40, HEIGHT/2), entitySize=(40, 150), color=PADDLE_BROWN, input_keys=[pygame.K_UP, pygame.K_DOWN])
+        self.player2 = Paddle(groups=self.paddleGroup, tag='player', position=pygame.math.Vector2(WIDTH - 40, HEIGHT/2), entitySize=(40, 150), color=PADDLE_BROWN, input_keys=[pygame.K_UP, pygame.K_DOWN], computerBool= self.aiBool)
         self.player2_score = 0
         #endregion
         #region Ball
@@ -62,8 +69,13 @@ class Pong:
         self.ballGroup.draw(self.screen)
         self.particleGroup.draw(self.screen)
         
-        # self.textComp(self.screen, self.font20, f'{self.player1_score} - {self.player2_score}', BLACK, 20, [320, 120])
-        self.ftFont.render_to(self.screen, self.screen.get_rect(), f'{self.player1_score} - {self.player2_score}')
+        if self.renderFirst:
+            text = self.ftFont.render('Press Space to Start', PARTICLES_BEIGE)
+        else:
+            text = self.ftFont.render(f'{self.player1_score} - {self.player2_score}', PARTICLES_BEIGE)
+        
+        text[1].center = (WIDTH//2, 100)
+        self.screen.blit(text[0], text[1])
         
         if self.menuBool:
             self.menuGroup.draw(self.screen)
@@ -79,8 +91,8 @@ class Pong:
             if event.key == pygame.K_ESCAPE:
                 self.timerBool = True
                 self.toggleMenu()
-            if event.key == pygame.K_p:
-                for x in range(200): self.spawnParticle()
+            if event.key == pygame.K_SPACE:
+                self.renderFirst = False
             
         self.ball.handleInput(event)
         
@@ -96,10 +108,9 @@ class Pong:
         time_delta = self.clock.tick() / 1000.0
         
         self.ballGroup.update() if not self.menuBool else None
-        self.player1.update()  
+        self.paddleGroup.update(self.ball.position, self.ball.direction)  
         self.paddleCollision()
         self.Score()
-        self.player2.computerPaddle(self.ball.position) if self.aiBool else self.player2.update()
         self.particleGroup.update()
         self.menu.UImanager.update(time_delta)
 
@@ -119,19 +130,23 @@ class Pong:
             if self.player1.rect.colliderect(self.ball.rect):
                 self.ball.change_angle([315, 405])
                 for x in range(20): self.spawnParticle(pygame.math.Vector2(self.ball.position.x - self.ball.radius, self.ball.position.y), [315, 405])
+                self.hit.play()
                 
             elif self.player2.rect.colliderect(self.ball.rect):
                 self.ball.change_angle([135, 225])
                 for x in range(20): self.spawnParticle(pygame.math.Vector2(self.ball.position.x + self.ball.radius, self.ball.position.y), [135, 225])
+                self.hit.play()
 
 #Count score
     def Score(self):
         if (self.ball.position.x - self.ball.radius -2) <= 0:
             self.player2_score += 1
+            self.lose.play()
             self.ball.reset()
         
         elif (self.ball.position.x - self.ball.radius -2) >= WIDTH:
             self.player1_score += 1
+            self.lose.play()
             self.ball.reset()
         
     def run(self, GAME_FPS: int):
