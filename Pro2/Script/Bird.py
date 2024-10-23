@@ -1,30 +1,48 @@
-import pygame
+from pygame import Vector2, Color, KEYDOWN, KEYUP, K_SPACE, draw, math, Surface, Rect, display
+from pygame.sprite import Group
+import math as mt
 
 from .Entity import Entity
 
 class Bird(Entity):
-    def __init__(self, tag: str, position: list, color: pygame.Color, input_keys: list) -> None:
-        super().__init__(tag, position, color)
-        self.gravity = 2
-
-        self.InputChart = {
-            pygame.KEYDOWN: {
-                input_keys[0]: lambda: setattr(self, 'velocity', [0, -2]),
-            }
+    def __init__(self, 
+            groups: Group, 
+            input_key: list,
+            position: Vector2 = math.Vector2(), 
+            direction: Vector2 = math.Vector2(), 
+            entitySize: tuple = (0, 0), 
+            color: Color = Color('black')) -> None:
+        super().__init__(groups, position, direction, entitySize, color)
+        
+        self.gravity = 250
+        self.time = 0
+        
+        self.inputChart = {
+            KEYDOWN: {
+                input_key[0]: lambda: setattr(self.direction, 'y', -1) ,
+            },
         }
-    
-    def update(self) -> None:
-        #self.X_coordinate += self.speed * self.velocity[0]
-        self.Y_coordinate += (self.gravity * self.velocity[1])
+        
+        self.image = Surface(size=self.entitySize).convert_alpha()
+        self.image.set_colorkey('black')        
+        self.render()
 
-        #gravity 
-        if self.active:
-            self.velocity[1] = min(1, self.velocity[1] + 0.1)
+    def update(self, deltaTime: float):
+        self.direction.y += deltaTime*2.4
+        self.direction.y = math.clamp(self.direction.y, -1, 1)
+        self.position.y += self.direction.y * self.gravity * deltaTime
+        
+        self.clampPosition()
+        self.rect.center = self.position
         return super().update()
+    
+    def render(self):
+        draw.rect(self.image, self.color, Rect((0, 0), self.entitySize))
+        draw.rect(self.image, Color('white'), Rect((30, 20), (3, 3)))
+        
+        return super().render()
+    
+    def clampPosition(self):
+        self.position.x = math.clamp(self.position.x, self.entitySize[0], display.get_window_size()[0])
+        self.position.y = math.clamp(self.position.y, self.entitySize[1], display.get_window_size()[1])
 
-    def render(self, surface: pygame.Surface) -> None:
-        self.collision_box = pygame.Rect((0, 0), (40, 40))
-        self.collision_box.center = (self.X_coordinate, self.Y_coordinate)
-        pygame.draw.rect(surface, self.Color, self.collision_box)
-
-        return super().render(surface)
