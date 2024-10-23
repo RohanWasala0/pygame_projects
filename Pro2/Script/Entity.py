@@ -1,28 +1,35 @@
-import pygame
+from pygame import sprite, Vector2, event, draw, Color
 
-class Entity:
-    def __init__(self, tag: str, position: list, color: pygame.Color) -> None:
-        self.X_coordinate = position[0]
-        self.Y_coordinate = position[1]
+class Entity(sprite.Sprite):
+    def __init__(self, 
+                groups: sprite.Group,
+                position: Vector2 = Vector2(), 
+                direction: Vector2 = Vector2(), 
+                entitySize: tuple = (0, 0), 
+                color: Color = Color('black')) -> None:
+        super().__init__(groups)
         
-        self.velocity = [0, 0]
-        self.active = False
+        self.group = groups
+        self.position = position
+        self.direction = direction
+        self.entitySize = entitySize
+        self.color = color
         
-        self.Color = color
+        self.inputChart = {}
         
-        self.InputChart = {}
         
-    def handle(self, event: pygame.event):
-        if event.type in self.InputChart:
-            if event.key in self.InputChart[event.type]:
-                self.InputChart[event.type][event.key]()
+    def handleInput(self, event: event) -> None:
         
-    def update(self, ) -> None:
-        
+        if hasattr(event, 'type') and event.type in self.inputChart:
+            self.inputChart[event.type][event.key]() if hasattr(event, 'key') and event.key in self.inputChart[event.type] else None
+            self.inputChart[event.type][event.ui_element]() if hasattr(event, 'ui_element') and event.ui_element in self.inputChart[event.type] else None
+                
+    
+    def update(self):
+
         pass
-        #self.velocity[1] = min(5, self.velocity[1] + 0.1)
-        
-    def render(self, surface: pygame.Surface) -> None:
-        
-        pygame.draw.circle(surface, (0,0,0), (self.X_coordinate, self.Y_coordinate), 1)
-        
+    
+    def render(self):
+        draw.circle(self.image, color=(0,3,55), center=tuple(x/2 for x in self.image.get_size()), radius=1)
+        self.rect = self.image.get_rect(center=self.position)
+        pass 
