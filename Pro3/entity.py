@@ -28,10 +28,11 @@ class Entity(sprite.Sprite):
         self.direction = direction.normalize()
         self.velocity = self.direction * self.get_random_speed()
         
+        self.weights = [1.5, 1.0, 1.0]
         # Weights for different behaviors
-        self.separation_weight = 1.5
-        self.alignment_weight = 1.0
-        self.cohesion_weight = 1.0
+        self.separation_weight = self.weights[0]
+        self.alignment_weight = self.weights[1]
+        self.cohesion_weight = self.weights[2]
         self.seek_weight = 2
         
         # Vision parameters
