@@ -1,4 +1,4 @@
-from pygame import Vector2, Color, KEYDOWN, KEYUP, K_SPACE, draw, math, Surface, Rect, display
+from pygame import Vector2, Color, KEYDOWN, draw, math, Surface, Rect, display, mask
 from pygame.sprite import Group
 import math as mt
 
@@ -15,7 +15,6 @@ class Bird(Entity):
         super().__init__(groups, position, direction, entitySize, color)
         
         self.gravity = 250
-        self.time = 0
         
         self.inputChart = {
             KEYDOWN: {
@@ -23,9 +22,10 @@ class Bird(Entity):
             },
         }
         
-        self.image = Surface(size=self.entitySize).convert_alpha()
+        self.image: Surface = Surface(size=self.entitySize).convert_alpha()
         self.image.set_colorkey('black')        
         self.render()
+        self.mask = mask.from_surface(self.image)
 
     def update(self, deltaTime: float):
         self.direction.y += deltaTime*2.4
@@ -40,9 +40,9 @@ class Bird(Entity):
         draw.rect(self.image, self.color, Rect((0, 0), self.entitySize))
         draw.rect(self.image, Color('white'), Rect((30, 20), (3, 3)))
         
+        self.rect: Rect = self.image.get_rect(center = self.position)
         return super().render()
     
     def clampPosition(self):
         self.position.x = math.clamp(self.position.x, self.entitySize[0], display.get_window_size()[0])
         self.position.y = math.clamp(self.position.y, self.entitySize[1], display.get_window_size()[1])
-
