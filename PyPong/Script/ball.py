@@ -45,14 +45,14 @@ class Ball(sprite.Sprite):
                 except Exception as e:
                     print(f"Error executing the action:{action} with error:{e}")
     
-    def update(self, deltaTime: float):
+    def update(self, deltaTime: float) -> None:
         self.conditions()
 
         position = self.position + (self.velocity * deltaTime)
         self.position = self.position.smoothstep(position, 0.6)
         self.rect = self.image.get_rect(center= self.position)
     
-    def render(self):
+    def render(self) -> None:
         """
         Creates the visual representation of entity
         Makes pygame.Surface converts it alpha so that entity's alpha can be used
@@ -73,22 +73,22 @@ class Ball(sprite.Sprite):
 
         self.rect = self.image.get_rect(center= self.position)
 
-    def conditions(self):
+    def conditions(self) -> None:
         if self.position.y < self.radius:
             self.position.y = self.radius
             self.velocity = self.velocity.reflect(Vector2(0, 1))
-        elif self.position.y > display.get_window_size[1] - self.radius:
-            self.position.y = display.get_window_size[1] - self.radius
+        elif self.position.y > display.get_window_size()[1] - self.radius:
+            self.position.y = display.get_window_size()[1] - self.radius
             self.velocity = self.velocity.reflect(Vector2(0, 1))
 
         if self.position.x < self.radius:
             self.position.x = self.radius
             self.velocity = self.velocity.reflect(Vector2(1, 0))
-        elif self.position.x > display.get_window_size[0] - self.radius:
-            self.position.x = display.get_window_size[0] - self.radius
+        elif self.position.x > display.get_window_size()[0] - self.radius:
+            self.position.x = display.get_window_size()[0] - self.radius
             self.velocity = self.velocity.reflect(Vector2(1, 0))
 
-    def rand_velocity(self):
+    def rand_velocity(self) -> Vector2:
         print("running")
         while True:
             direction = Vector2(uniform(-1, 1), uniform(-1, 1))
@@ -100,10 +100,10 @@ class Ball(sprite.Sprite):
                 print("not assigned velocity")
                 return self.velocity
     
-    def change_angel(self, angles: Tuple[int, int]):
+    def change_angel(self, angles: Tuple[int, int]) -> Vector2:
         angle = uniform(radians(angles[0]), radians(angles[1]))
         return Vector2(cos(angle), sin(angle)).normalize() * self.speed
 
-    def reset(self):
+    def reset(self) -> None:
         self.velocity = Vector2()
         self.position = Vector2(tuple(x/2 for x in display.get_window_size()))
