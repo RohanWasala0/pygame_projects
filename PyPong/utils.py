@@ -10,3 +10,5 @@ BACKGROUND_BLACK = Color('#181C14')
 PADDLE_BROWN = Color('#3C3D37')
 BALL_GREY = Color('#697565')
 PARTICLES_BEIGE = Color('#ECDFCC')
+
+FONT_PATH = '.\Assets\pixcel_font.ttf'

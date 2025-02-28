@@ -100,7 +100,7 @@ class Ball(sprite.Sprite):
                 print("not assigned velocity")
                 return self.velocity
     
-    def change_angel(self, angles: Tuple[int, int]) -> Vector2:
+    def change_angle(self, angles: Tuple[int, int]) -> Vector2:
         angle = uniform(radians(angles[0]), radians(angles[1]))
         return Vector2(cos(angle), sin(angle)).normalize() * self.speed
 
