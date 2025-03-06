@@ -35,6 +35,7 @@ class PyPong():
             color= PADDLE_BROWN,
             input_keys= (pygame.K_w, pygame.K_s),
         )
+        self.player1_score = 0
         self.player2= Paddle(
             groups= self.paddle_group,
             position= pygame.Vector2(WIDTH-40, HEIGHT//2),
@@ -42,23 +43,35 @@ class PyPong():
             color= PADDLE_BROWN,
             input_keys= (pygame.K_UP, pygame.K_DOWN),
         )
+        self.player2_score = 0
     # endregion
 
     # region Text Canvas
         self.text_canvas_group = pygame.sprite.Group()
-        self.testing = text_canvas(
+        self.is_playing = True
+        self.player1_control_text = text_canvas(
             groups= self.text_canvas_group,
-            position= pygame.Vector2(WIDTH//2 , HEIGHT//2),
+            position= pygame.Vector2(20, (40*8)+20),
             font_path= FONT_PATH,
+            font_size= 20,
             color= pygame.Color('white'),
-            text= f"testing for changes"
+            text= f"S, W\nto move"
         )
-        self.test = text_canvas(
+        self.player2_control_text = text_canvas(
             groups= self.text_canvas_group,
-            position= pygame.Vector2(80, (40*8)+20),
+            position= pygame.Vector2((11* 40 ) + 20, (40*8)+20),
             font_path= FONT_PATH,
+            font_size= 20,
             color= pygame.Color('white'),
-            text= f"testing for changes"
+            text= f"UP, DOWN\nto move"
+        )
+        self.score_canvas = text_canvas(
+            groups= self.text_canvas_group,
+            position= pygame.Vector2(WIDTH//2, 60),
+            font_path= FONT_PATH,
+            font_size= 25,
+            color= pygame.Color('white'),
+            text= f"{self.player1_score}-{self.player2_score}"
         )
     # endregion
 
@@ -82,13 +95,16 @@ class PyPong():
             self.ball.handling_input(event)
             self.player1.handling_input(event)
             self.player2.handling_input(event)
+            self.player1_control_text.handling_input(event)
+            self.player2_control_text.handling_input(event)
 
     def update(self) -> None:
         deltaTime = self.clock.tick() / 1000.0
 
         self.paddle_collision()
 
-        self.testing.sinusoidal_motion(deltaTime, 9, 0.18, 25)
+        self.player1_control_text.sinusoidal_motion(deltaTime, 9, 0.18, 25)
+        self.player2_control_text.sinusoidal_motion(deltaTime, 9, 0.18, 25)
 
         self.ball_group.update(deltaTime)
         self.paddle_group.update(deltaTime)
