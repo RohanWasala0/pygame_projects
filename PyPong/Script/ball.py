@@ -50,8 +50,8 @@ class Ball(sprite.Sprite):
 
         position = self.position + (self.velocity * deltaTime)
         self.position = self.position.smoothstep(position, 0.6)
-        self.rect = self.image.get_rect(center= self.position)
-    
+        self.rect.center = self.position
+
     def render(self) -> None:
         """
         Creates the visual representation of entity
@@ -81,29 +81,18 @@ class Ball(sprite.Sprite):
             self.position.y = display.get_window_size()[1] - self.radius
             self.velocity = self.velocity.reflect(Vector2(0, 1))
 
-        if self.position.x < self.radius:
-            self.position.x = self.radius
-            self.velocity = self.velocity.reflect(Vector2(1, 0))
-        elif self.position.x > display.get_window_size()[0] - self.radius:
-            self.position.x = display.get_window_size()[0] - self.radius
-            self.velocity = self.velocity.reflect(Vector2(1, 0))
 
     def rand_velocity(self) -> Vector2:
         print("running")
         while True:
             direction = Vector2(uniform(-1, 1), uniform(-1, 1))
-            if direction.length() > 0 and self.start:
-                print("assigned velocity")
-                self.start = False
-                return direction.normalize() * self.speed
-            else:
-                print("not assigned velocity")
-                return self.velocity
+            return direction.normalize() * self.speed
     
     def change_angle(self, angles: Tuple[int, int]) -> Vector2:
         angle = uniform(radians(angles[0]), radians(angles[1]))
         return Vector2(cos(angle), sin(angle)).normalize() * self.speed
 
-    def reset(self) -> None:
+    def reset_position(self) -> None:
         self.velocity = Vector2()
-        self.position = Vector2(tuple(x/2 for x in display.get_window_size()))
+        self.rect = self.rect.move_to(center= Vector2(tuple(x/2 for x in display.get_window_size())))
+        self.position = Vector2(self.rect.center)

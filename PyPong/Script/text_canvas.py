@@ -1,6 +1,6 @@
-from pygame import sprite, Vector2, draw, Color, Surface, Rect, event, KEYDOWN, K_SPACE
-from typing import Tuple, Optional
-from pygame import freetype 
+from pygame import KEYDOWN, K_SPACE, SRCALPHA
+from pygame import sprite, Vector2, draw, Color, Surface, Rect, event, freetype
+from typing import Tuple, Optional, Dict, Callable
 import math
 
 class text_canvas(sprite.Sprite):
@@ -14,23 +14,24 @@ class text_canvas(sprite.Sprite):
                 ) -> None:
         super().__init__(groups)
         
-        self.group = groups
         self.position = position or Vector2()
-        self.color = color
-        self.font = freetype.Font(font_path, font_size)
-        self.time = 0
-        
-        self.text = text
-        self.canvas_size = []
         self.initial_position = position or Vector2()
+        self.color = color or Color('white')
+        self.text = text
+
+        self.font = freetype.Font(font_path, font_size) if font_path else freetype.SysFont(None, font_size)
         
-        self.input_chart = {
+        self.image: Surface = Surface((1, 1), SRCALPHA)
+        self.rect: Rect = self.image.get_rect(topleft = self.position)
+        
+        self.input_chart: Dict[int, Dict[int, Callable]] = {
             KEYDOWN: {
                 K_SPACE: self.kill,
             },
         }
 
         self.render()
+        self.time = 0
     
     def handling_input(self, event: event) -> None:
         """
@@ -49,7 +50,7 @@ class text_canvas(sprite.Sprite):
                     print(f"Error executing the action:{action} with error:{e}")
  
     def update(self, deltaTime: float):
-        self.rect = self.image.get_rect(topleft= self.position)
+        self.rect.topleft = self.position
 
     def render(self):
         """
@@ -57,27 +58,26 @@ class text_canvas(sprite.Sprite):
         Makes pygame.Surface converts it alpha so that entity's alpha can be used
         Set colorkey to black and fills it with the same color to make it transparent
         """
-        lines = self.text.split('\n')
-        self.canvas_size = [(max(len(s) for s in lines))*self.font.get_sized_height(), len(lines)*self.font.get_sized_height()]
-
-        #print(self.canvas_size)
+        self.canvas_size = self.calculate_canvas_size()
         
-        if self.canvas_size != (0, 0):
-            self.image = Surface(self.canvas_size).convert_alpha()
-            self.image.set_colorkey(Color('black'))
-            self.image.fill(Color('black'))
+        if self.canvas_size == (0, 0): 
+            return
+
+        self.image = Surface(self.canvas_size, SRCALPHA)
+        self.image.fill(Color(0, 0, 0, 0))
 
         y_offset = 0
         line_spcaing = self.font.get_sized_height()
         
-        for line in lines:
-            self.font.render_to(
+        for line in self.text.split('\n'):
+            text_rect = self.font.render_to(
                 surf= self.image,
                 dest= Rect((0, y_offset), self.canvas_size),
                 text= line,
                 fgcolor= self.color,
             )
             y_offset += line_spcaing
+            self.rect = self.rect.union(text_rect)
 
         draw.rect(
             self.image,
@@ -88,10 +88,15 @@ class text_canvas(sprite.Sprite):
 
         self.rect = self.image.get_rect(topleft = self.position)
 
+    def calculate_canvas_size(self) -> Tuple[int, int]:
+        lines = self.text.split('\n')
+        max_width = max((self.font.get_sized_height()* len(line)) for line in lines) if lines else 0
+        total_height = len(lines)* self.font.get_sized_height()
+        
+        return max_width, total_height
+
     def sinusoidal_motion(self, deltaTime: float, amplitude: int, frequency: float, speed: int) -> None:
         self.time += deltaTime * speed
         sine = amplitude * math.sin(frequency * self.time)
         self.position = Vector2(self.position.x, self.initial_position.y + sine)
-
         
-        self.rect = self.image.get_rect(center= self.position)
