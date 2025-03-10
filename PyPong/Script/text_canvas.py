@@ -7,6 +7,7 @@ class text_canvas(sprite.Sprite):
     def __init__(self, 
                 groups: sprite.Group,
                 position: Optional[Vector2] = None, 
+                anchor: str = 'topleft',
                 text: str = "Testing",
                 font_path: str = None,
                 font_size: int = 10,                
@@ -16,6 +17,7 @@ class text_canvas(sprite.Sprite):
         
         self.position = position or Vector2()
         self.initial_position = position or Vector2()
+        self.anchor = anchor
         self.color = color or Color('white')
         self.text = text
 
@@ -50,7 +52,7 @@ class text_canvas(sprite.Sprite):
                     print(f"Error executing the action:{action} with error:{e}")
  
     def update(self, deltaTime: float):
-        self.rect.topleft = self.position
+        setattr(self.rect, self.anchor, self.position)
 
     def render(self):
         """
@@ -86,7 +88,8 @@ class text_canvas(sprite.Sprite):
             width=1,
         )
 
-        self.rect = self.image.get_rect(topleft = self.position)
+        self.rect = self.image.get_rect()
+        setattr(self.rect, self.anchor, self.position)
 
     def calculate_canvas_size(self) -> Tuple[int, int]:
         lines = self.text.split('\n')
