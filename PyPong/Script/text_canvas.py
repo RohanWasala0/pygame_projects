@@ -1,5 +1,5 @@
 from pygame import KEYDOWN, K_SPACE, SRCALPHA
-from pygame import sprite, Vector2, draw, Color, Surface, Rect, event, freetype
+from pygame import sprite, Vector2, draw, Color, Surface, Rect, event, font
 from typing import Tuple, Optional, Dict, Callable
 import math
 
@@ -21,18 +21,16 @@ class text_canvas(sprite.Sprite):
         self.color = color or Color('white')
         self.text = text
 
-        self.font = freetype.Font(font_path, font_size) if font_path else freetype.SysFont(None, font_size)
+        self.font = font.Font(font_path, font_size) 
         
         self.image: Surface = Surface((1, 1), SRCALPHA)
         self.rect: Rect = self.image.get_rect(topleft = self.position)
         
-        self.input_chart: Dict[int, Dict[int, Callable]] = {
-            KEYDOWN: {
-                K_SPACE: self.kill,
-            },
+        self.input_chart = {
         }
 
         self.render()
+        
         self.time = 0
     
     def handling_input(self, event: event) -> None:
@@ -69,32 +67,32 @@ class text_canvas(sprite.Sprite):
         self.image.fill(Color(0, 0, 0, 0))
 
         y_offset = 0
-        line_spcaing = self.font.get_sized_height()
+        line_spcaing = self.font.get_height()
         
         for line in self.text.split('\n'):
-            text_rect = self.font.render_to(
-                surf= self.image,
-                dest= Rect((0, y_offset), self.canvas_size),
+            text_surf = self.font.render(
                 text= line,
-                fgcolor= self.color,
+                antialias= True,
+                color= self.color,
             )
+            text_rect = text_surf.get_rect(topleft = (0, y_offset))
             y_offset += line_spcaing
-            self.rect = self.rect.union(text_rect)
+            self.image.blit(text_surf, text_rect)
 
-        draw.rect(
-            self.image,
-            Color('white'),
-            self.image.get_rect(),
-            width=1,
-        )
+        # draw.rect(
+        #     self.image,
+        #     Color('white'),
+        #     self.image.get_rect(),
+        #     width=1,
+        # )
 
         self.rect = self.image.get_rect()
         setattr(self.rect, self.anchor, self.position)
 
     def calculate_canvas_size(self) -> Tuple[int, int]:
         lines = self.text.split('\n')
-        max_width = max((self.font.get_sized_height()* len(line)) for line in lines) if lines else 0
-        total_height = len(lines)* self.font.get_sized_height()
+        max_width = max((self.font.get_height()* len(line)) for line in lines) if lines else 0
+        total_height = len(lines)* self.font.get_height()
         
         return max_width, total_height
 

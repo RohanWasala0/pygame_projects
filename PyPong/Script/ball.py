@@ -21,11 +21,7 @@ class Ball(sprite.Sprite):
         self.speed = 600
         self.start = True
 
-        self.input_chart = {
-            KEYDOWN: {
-                K_SPACE: lambda: setattr(self, 'velocity', self.rand_velocity()),
-            }
-        }
+        self.input_chart = {}
         
         self.render()
         
@@ -73,13 +69,15 @@ class Ball(sprite.Sprite):
 
         self.rect = self.image.get_rect(center= self.position)
 
-    def conditions(self) -> None:
+    def conditions(self ) -> bool:
         if self.position.y < self.radius:
             self.position.y = self.radius
             self.velocity = self.velocity.reflect(Vector2(0, 1))
+            return True
         elif self.position.y > display.get_window_size()[1] - self.radius:
             self.position.y = display.get_window_size()[1] - self.radius
             self.velocity = self.velocity.reflect(Vector2(0, 1))
+            return True
 
 
     def rand_velocity(self) -> Vector2:

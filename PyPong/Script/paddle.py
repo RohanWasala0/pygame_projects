@@ -80,3 +80,6 @@ class Paddle(sprite.Sprite):
 
     def add_velocity(self, direction: Tuple[int, int] = (0, 0)):
         return Vector2(direction) * self.speed
+    
+    def reset_position(self) -> None:
+        self.position.y = display.get_window_size()[1]//2

@@ -16,7 +16,7 @@ class Game:
         pygame.display.set_caption("Game")
 
         #system variables 
-        self.font = ft.Font('.\m6x11.ttf',20)
+        self.font = ft.Font('.\SixtyfourConvergence-Regular-VariableFont_BLED,SCAN,XELA,YELA.ttf',20)
         self.screen = pygame.display.set_mode((Screen_DIMENSIONS[0], Screen_DIMENSIONS[1]))
         self.clock = pygame.time.Clock()
         self.deltaTime = 0
