@@ -4,9 +4,9 @@ import pygame
 import random
 
 from utils import *
-from Script.ball import Ball
-from Script.paddle import Paddle
-from Script.text_canvas import text_canvas
+from script.ball import Ball
+from script.paddle import Paddle
+from script.text_canvas import text_canvas
 
 class PyPong():
     def __init__(self) -> None:
@@ -15,6 +15,8 @@ class PyPong():
 
         self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SRCALPHA)
         self.clock = pygame.time.Clock()
+
+        print("started")
 
         self._initialize_ball()
         self._initialize_paddles()
@@ -177,14 +179,6 @@ class PyPong():
         self.point_scored()
         self.text_canvas_group.update(deltaTime)
 
-    def run(self) -> None:
-        while True:
-            self.render()
-            self.handle_input()
-            self.update()
-
-            pygame.display.update()
-
     def paddle_collision(self) -> None:
 
         def handle_collision(paddle, direction, angle_range):
@@ -222,10 +216,21 @@ class PyPong():
         self.player1.reset_position()
         self.player2.reset_position()
         self.player1_score, self.player2_score = 0, 0
+        self.text_canvas_group.add(self.player1_control_text, self.player2_control_text)
     
     def test(self):
         print("tested")
 
 
+async def main() -> None:
+    game = PyPong()
+    while True:
+        game.render()
+        game.handle_input()
+        game.update()
+
+        pygame.display.update()
+        await asyncio.sleep(0)
+
 if __name__ == "__main__":
-    PyPong().run()
+    asyncio.run(main())
