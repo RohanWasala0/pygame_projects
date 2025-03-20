@@ -17,17 +17,16 @@ class text_canvas(sprite.Sprite):
         
         self.position = position or Vector2()
         self.initial_position = position or Vector2()
-        self.anchor = anchor
         self.color = color or Color('white')
+        self.anchor = anchor
+        self.input_chart = {}
         self.text = text
 
         self.font = font.Font(font_path, font_size) 
         
         self.image: Surface = Surface((1, 1), SRCALPHA)
-        self.rect: Rect = self.image.get_rect(topleft = self.position)
-        
-        self.input_chart = {
-        }
+        self.rect: Rect = self.image.get_rect()
+        setattr(self.rect, self.anchor, self.position)
 
         self.render()
         

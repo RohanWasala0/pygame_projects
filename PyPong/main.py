@@ -4,9 +4,9 @@ import pygame
 import random
 
 from utils import *
-from script.ball import Ball
-from script.paddle import Paddle
-from script.text_canvas import text_canvas
+from Script.ball import Ball
+from Script.paddle import Paddle
+from Script.text_canvas import text_canvas
 
 class PyPong():
     def __init__(self) -> None:

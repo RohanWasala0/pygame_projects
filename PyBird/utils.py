@@ -12,4 +12,9 @@ BALL_GREY = Color('#697565')
 PARTICLES_BEIGE = Color('#ECDFCC')
 
 FONT_PATH = 'assets/pixcel_font.ttf'
-BIRD_SHEET = image.load('assets/Retro-Lines-16x16/bird.png') 
+ENVIRONMENT_SHEET = image.load('assets/Retro-Lines-16x16/Environment.png')
+BIRD_SHEET = image.load('assets/Retro-Lines-16x16/bird.png')
+BACKGROUND_AIR = []
+
+for x in range(1, 12):
+    BACKGROUND_AIR.append(image.load('assets/Retro-Lines-16x16/background_air/air_'+f'{x:02d}.png'))    
