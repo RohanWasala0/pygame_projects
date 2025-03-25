@@ -1,10 +1,12 @@
 import sys
 import asyncio
 import pygame
+from random import randint, uniform
 
 from utils import *
 from script.bird import Bird
 from script.environment import Environment
+from script.ground import Ground
 
 class PyBird():
     def __init__(self) -> None:
@@ -23,11 +25,21 @@ class PyBird():
         )
 
         self.environment_sheet = pygame.sprite.Group()
-        self.env_sheet = Environment(
-            groups= self.environment_sheet,
-            position = pygame.Vector2( WIDTH//4, HEIGHT//4),
-            anchor= 'center',
-            BACKGROUND_AIR= BACKGROUND_AIR,
+        for _ in range(5):
+            Environment(
+                self.environment_sheet,
+                pygame.Vector2(randint(16, WIDTH-16), randint(16, HEIGHT-16)),
+                anchor='center',
+                speed= uniform(10.5, 50),
+                frames= BACKGROUND_AIR,
+            )
+        pygame.time.set_timer(pygame.USEREVENT, 4000)
+
+        self.ground_group = pygame.sprite.Group()
+        self.ground = Ground(
+            groups= self.ground_group,
+            position= pygame.Vector2(),
+            frames= GROUND,
         )
 
     def _grid_background(self) -> None:
@@ -45,6 +57,7 @@ class PyBird():
         self.environment_sheet.draw(self.screen)
         self.bird_group.draw(self.screen)
         self.bird.render()
+        self.ground_group.draw(self.screen)
         
         # for i, tile in enumerate(self.env_sheet.animation_list):
         #     scaled = pygame.transform.scale(tile, (40, 40))
@@ -55,9 +68,21 @@ class PyBird():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.USEREVENT:
+                self.add_air()
         
     def update(self, deltaTime: float) -> None:
         self.bird_group.update(deltaTime)
+        self.environment_sheet.update(deltaTime)
+    
+    def add_air(self) -> None:
+        air = Environment(
+            self.environment_sheet,
+            pygame.Vector2(WIDTH+16, randint(16, HEIGHT-16)),
+            anchor='center',
+            speed= uniform(10.5, 50),
+            frames= BACKGROUND_AIR,
+        )
 
 async def main() -> None:
     deltaTime: float = 0.0
