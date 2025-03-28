@@ -1,7 +1,7 @@
 import sys
 import asyncio
 import pygame
-from random import randint, uniform
+from random import randrange, uniform, randint
 
 from utils import *
 from script.bird import Bird
@@ -36,18 +36,16 @@ class PyBird():
         pygame.time.set_timer(pygame.USEREVENT, 4000)
 
         self.ground_group = pygame.sprite.Group()
-        self.ground = Ground(
-            groups= self.ground_group,
-            position= pygame.Vector2(),
-            frames= GROUND,
-        )
+        self.generate_ground(WIDTH)
+        # for x in range(0, WIDTH, 48):
+        #     self.generate_ground(x)
 
     def _grid_background(self) -> None:
         self.background = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
 
-        for x in range(0, WIDTH, 40):
+        for x in range(0, WIDTH, 16):
             pygame.draw.line(self.background, pygame.Color(173, 170, 170, 75), (x, 0), (x, HEIGHT)) 
-        for y in range(0, HEIGHT, 40):
+        for y in range(0, HEIGHT, 16):
             pygame.draw.line(self.background, pygame.Color(173, 170, 170, 75), (0, y), (WIDTH, y)) 
     
     def render(self) -> None:
@@ -55,8 +53,8 @@ class PyBird():
         self.screen.blit(self.background)
 
         self.environment_sheet.draw(self.screen)
-        self.bird_group.draw(self.screen)
-        self.bird.render()
+        # self.bird_group.draw(self.screen)
+        # self.bird.render()
         self.ground_group.draw(self.screen)
         
         # for i, tile in enumerate(self.env_sheet.animation_list):
@@ -74,6 +72,7 @@ class PyBird():
     def update(self, deltaTime: float) -> None:
         self.bird_group.update(deltaTime)
         self.environment_sheet.update(deltaTime)
+        self.ground_group.update(deltaTime)
     
     def add_air(self) -> None:
         air = Environment(
@@ -82,6 +81,26 @@ class PyBird():
             anchor='center',
             speed= uniform(10.5, 50),
             frames= BACKGROUND_AIR,
+        )
+
+    def generate_ground(self, coord_x) -> None:
+        x = randrange(80, HEIGHT-136, 16)
+        y = HEIGHT - 128 - x
+
+        print(x, x//16)
+        t = Ground(
+            self.ground_group,
+            pygame.Vector2(coord_x, x),
+            anchor= 'bottomleft',
+            height= x//16,
+            frames= GROUND
+        )
+        t.image = pygame.transform.flip(t.image, False, True)
+        Ground(
+            self.ground_group,
+            pygame.Vector2(coord_x, (HEIGHT- y)),
+            height= (HEIGHT-x)//16,
+            frames= GROUND
         )
 
 async def main() -> None:
