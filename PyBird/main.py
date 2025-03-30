@@ -33,10 +33,15 @@ class PyBird():
                 speed= uniform(10.5, 50),
                 frames= BACKGROUND_AIR,
             )
-        pygame.time.set_timer(pygame.USEREVENT, 4000)
+        self.environment_event = pygame.USEREVENT + abs(hash('environment')) % 1000
+        pygame.time.set_timer(self.environment_event, 4000)
 
         self.ground_group = pygame.sprite.Group()
-        self.generate_ground(WIDTH)
+        self.generate_ground(WIDTH//2)
+        self.ground_event = pygame.USEREVENT + abs(hash('ground')) % 1000
+        self.ground_spawn_timer = 15
+        pygame.time.set_timer(self.ground_event, self.ground_spawn_timer* 1000)
+        # self.generate_ground(WIDTH)
         # for x in range(0, WIDTH, 48):
         #     self.generate_ground(x)
 
@@ -66,13 +71,15 @@ class PyBird():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.USEREVENT:
+            if event.type == self.environment_event:
                 self.add_air()
+            # if event.type == self.ground_event:
+            #     self.generate_ground(WIDTH)
         
     def update(self, deltaTime: float) -> None:
         self.bird_group.update(deltaTime)
         self.environment_sheet.update(deltaTime)
-        self.ground_group.update(deltaTime)
+        # self.ground_group.update(deltaTime)
     
     def add_air(self) -> None:
         air = Environment(
@@ -93,14 +100,18 @@ class PyBird():
             pygame.Vector2(coord_x, x),
             anchor= 'bottomleft',
             height= x//16,
-            frames= GROUND
+            ground_tiles= GROUND,
+            foliage_tiles= FOLIAGE,
+            speed= 45.0,
         )
         t.image = pygame.transform.flip(t.image, False, True)
         Ground(
             self.ground_group,
             pygame.Vector2(coord_x, (HEIGHT- y)),
-            height= (HEIGHT-x)//16,
-            frames= GROUND
+            height= (HEIGHT-x)//16 -8,
+            ground_tiles= GROUND,
+            foliage_tiles= FOLIAGE,
+            speed= 45.0
         )
 
 async def main() -> None:

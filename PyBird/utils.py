@@ -17,9 +17,13 @@ ENVIRONMENT_SHEET = image.load('assets/Retro-Lines-16x16/Environment.png')
 BIRD_SHEET = image.load('assets/Retro-Lines-16x16/bird.png')
 BACKGROUND_AIR = []
 GROUND = []
+FOLIAGE = []
 
 for entry in os.scandir('./assets/Retro-Lines-16x16/background_air'):
     BACKGROUND_AIR.append(image.load(entry.path))
 
 for entry in os.scandir('./assets/Retro-Lines-16x16/ground_tiles'):
     GROUND.append(image.load(entry.path))
+
+for entry in os.scandir('./assets/Retro-Lines-16x16/foliage'):
+    FOLIAGE.append(image.load(entry.path))

@@ -1,4 +1,4 @@
-from random import choice
+from random import choice, randint
 from pygame import sprite, Vector2, event, Rect, Color, Surface, SRCALPHA, draw, transform, mask, display
 from typing import List, Optional, Dict, Union
 
@@ -8,89 +8,95 @@ class Ground(sprite.Sprite):
                 position: Optional[Vector2] = None, 
                 anchor: str = 'topleft',
                 height: int = 3,
-                frames: list = [],
+                ground_tiles: List[Surface] = None,
+                foliage_tiles: List[Surface] = None,
+                speed: float = 10.0,
                 ) -> None:
         super().__init__(groups)
         
+        # ground_tiles = [transform.scale(x, [y* 1.5 for y in x.size]) for x in ground_tiles]
+        # foliage_tiles = [transform.scale(x, [y* 0.7 for y in x.size]) for x in foliage_tiles]
+
         self.group = groups
-        self.position = Vector2(position.x - 24, position.y)
-        self.velocity = Vector2(-1, 0) * 25
+        self.position = position
+        self.velocity = Vector2(-1, 0) * speed
         self.anchor = anchor
         self.input_chart = {}
-        self.ground_tiles = []
+        self.tile_width, self.tile_height = ground_tiles[0].size
         
         self.GROUND = {
             "corner": {
-                'left': {'frame': frames[0], 'tile_map': [[0, 0, 0], [0, 'corner', 'anchor'], [0, 'stright_left', 'dirt']]},
-                'right': {'frame': frames[10], 'tile_map': [[0, 0, 0], ['anchor', 'corner', 0], ['dirt', 'stright_right', 0]]},
+                'left': {'tile': ground_tiles[0], 'tile_map': [[0, 'foliage', 0], ['foliage', 'corner', 'anchor'], ['foliage', 'stright_left', 'dirt']]},
+                'right': {'tile': ground_tiles[10], 'tile_map': [[0, 0, 0], ['anchor', 'corner', 0], ['dirt', 'stright_right', 0]]},
             },
-            "anchor": {'frame': frames[5], 'tile_map': [[0, 0, 0], ['corner_left', 'anchor', 'corner_right'], ['stright_left', 'dirt', 'stright_right']]},
+            "anchor": {'tile': ground_tiles[5], 'tile_map': [[0, 0, 0], ['corner_left', 'anchor', 'corner_right'], ['stright_left', 'dirt', 'stright_right']]},
             "stright": {
-                'left': {'frame': [frames[1], frames[2], frames[3]], 'tile_map': [[0, 'corner_left', 'anchor'], [0, 'stright_left', 'dirt'], [0, 'stright_left', 'dirt']]},
-                'right': {'frame': [frames[11], frames[12], frames[13]], 'tile_map': [[0, 'corner_right', 'anchor'], [0, 'stright_right', 'dirt'], [0, 'stright_right', 'dirt']]},
+                'left': {'tile': [ground_tiles[1], ground_tiles[2], ground_tiles[3]], 'tile_map': [[0, 'corner_left', 'anchor'], [0, 'stright_left', 'dirt'], [0, 'stright_left', 'dirt']]},
+                'right': {'tile': [ground_tiles[11], ground_tiles[12], ground_tiles[13]], 'tile_map': [[0, 'corner_right', 'anchor'], [0, 'stright_right', 'dirt'], [0, 'stright_right', 'dirt']]},
             },
-            "dirt": {'frame': [frames[6], frames[7], frames[8]]},
+            "dirt": {'tile': [ground_tiles[6], ground_tiles[7], ground_tiles[8]]},
+            "foliage": {'tile': foliage_tiles},
         }
         
         self.image: Surface = Surface((0, 0), SRCALPHA)
         self.image.set_colorkey(Color(0, 0, 0, 0))
         self.rect: Rect = self.image.get_rect()
-        # setattr(self.rect, self.anchor, self.position)
 
-        self.generated_tiles = self._generate_standard_ground(3, height)
-        # self.generate_tiles()
-
+        self.generated_tiles = self._generate_ground(height)
         self.render()
 
-    def generate_tiles(self) -> None:
-        start_tiles = [[self.GROUND['anchor']]]
-        self.generated_tiles = []
-        for y in range(len(start_tiles)):
-            for x in start_tiles[y]:
-                map = x['tile_map']
-                layer = []
-                for k in map:
-                    if 0 in k:
-                        continue
-                    else:
-                        for x in k:
-                            layer.append(self.get_ground_tile(x)['frame'])
-                self.generated_tiles.append(layer)
         
-    def _generate_standard_ground(self, width: int, height: int) -> List[List[Surface]]:
-        """
-        Generate a standard ground layout with anchor, corners, and dirt tiles.
-        """
+    def _generate_ground(self, height: int) -> List[List[Surface]]:
         ground_tiles = []
-        
-        # First row (top layer)
+        middle = height - 4 if height > 4 else 0
         top_row = [
-            self.get_ground_tile('corner_left')['frame'],
-            self.get_ground_tile('anchor')['frame'],
-            self.get_ground_tile('corner_right')['frame']
+            transform.rotate(self.get_random_tile('foliage')['tile'], 90),
+            self.get_ground_tile('corner_left')['tile'],
+            self.get_ground_tile('anchor')['tile'],
+            self.get_ground_tile('corner_right')['tile'],
+            transform.rotate(self.get_random_tile('foliage')['tile'], -90)
         ]
         
-        # Middle rows (dirt)
-        middle_rows =[
-            [self.get_random_tile('stright_left')['frame'],
-            self.get_random_tile('dirt')['frame'],
-            self.get_random_tile('stright_right')['frame']]
-         for _ in range(height)]
-        
-        ground_tiles = [top_row] + middle_rows
+        middle_rows =[[
+            transform.rotate(self.get_random_tile('foliage')['tile'], 90),
+            self.get_random_tile('stright_left')['tile'],
+            self.get_random_tile('dirt')['tile'],
+            self.get_random_tile('stright_right')['tile'],
+            transform.rotate(self.get_random_tile('foliage')['tile'], -90)
+        ]for _ in range(middle)]
+
+        left_extra, right_extra = 0, 0
+        last3_rows = []
+        for x in range(1, 4):
+            row = [
+                transform.rotate(self.get_random_tile('foliage')['tile'], 90),
+                self.get_random_tile('stright_left')['tile'],
+                self.get_random_tile('dirt')['tile'],
+                self.get_random_tile('stright_right')['tile'],
+                transform.rotate(self.get_random_tile('foliage')['tile'], -90)
+            ]
+            left_extra = randint(left_extra, 4)
+            for _ in range(left_extra):
+                row.insert(2, self.get_random_tile('dirt')['tile'])
+            
+            right_extra = randint(right_extra, 4)
+            for _ in range(right_extra):
+                row.insert(-2, self.get_random_tile('dirt')['tile'])
+            last3_rows.append(row)
+            print(len(row))
+
+        ground_tiles = [top_row] + middle_rows + last3_rows
         return ground_tiles
 
     def get_random_tile(self, tile_category: str) -> Dict[str, Union[List[Surface], Surface]]:
-        """
-        Get a random tile from a specific category.
-        """
+
         tile_data = self.get_ground_tile(tile_category)
-        if isinstance(tile_data['frame'], list):
-            return {'frame': choice(tile_data['frame'])}
+        if isinstance(tile_data['tile'], list):
+            return {'tile': choice(tile_data['tile'])}
         return tile_data
 
     def get_ground_tile(self, tile_name):
-        keys = tile_name.split("_")  # Split the string by "_"
+        keys = tile_name.split("_")  
 
         if len(keys) == 1:  # Direct key lookup (e.g., "anchor" or "dirt")
             return self.GROUND.get(keys[0], None)
@@ -99,18 +105,39 @@ class Ground(sprite.Sprite):
             main_key, sub_key = keys
             return self.GROUND.get(main_key, {}).get(sub_key, None)
 
-        return None  # Return None if the format is unexpected 
+        return None  
 
-    def merge_tiles(self, ground_tiles) -> Surface:
-        x = len(ground_tiles[0])
-        y = len(ground_tiles)
-        ground = Surface((x*16, y*16), SRCALPHA)
-        for y, tile_row in enumerate(ground_tiles):
+    # def merge_tiles(self, tiles) -> Surface:
+    #     ground = Surface((len(max(tiles, key=len))*self.tile_width, len(tiles)*self.tile_height), SRCALPHA)
+    #     for y, tile_row in enumerate(tiles):
+    #         for x, tile in enumerate(tile_row):
+    #             ground.blit(tile, (x* self.tile_width, y* self.tile_height ))
+    #     return ground
+
+    def merge_tiles(self, tiles) -> Surface:
+    # Find the longest row to determine the width of the surface
+        max_row_length = len(max(tiles, key=len))
+        
+        # Find the anchor position (index 2 in the top row)
+        anchor_position = 2
+        
+        # Create the surface with the maximum possible width
+        ground = Surface((max_row_length * self.tile_width, len(tiles) * self.tile_height), SRCALPHA)
+        
+        for y, tile_row in enumerate(tiles):
+            # Calculate offset for centering the current row relative to the anchor
+            # The idea is to keep the anchor tile (or where it would be) centered
+            row_center_offset = (max_row_length - len(tile_row)) // 2
+            
+            # Additional offset to align with the anchor position (not the center of the row)
+            anchor_alignment_offset = anchor_position - (len(tiles[0]) // 2)
+            
+            # Combined offset
+            offset = row_center_offset + anchor_alignment_offset
+            
             for x, tile in enumerate(tile_row):
-                if type(tile) == Surface:
-                    ground.blit(tile, (x*16, y*16))
-                else:
-                    ground.blit(choice(tile), (x*16, y*16))
+                ground.blit(tile, ((x + offset) * self.tile_width, y * self.tile_height))
+        
         return ground
 
     def update(self, deltaTime: float):
@@ -121,29 +148,27 @@ class Ground(sprite.Sprite):
         setattr(self.rect, self.anchor, self.position)
     
     def render(self):
-        """
-        Creates the visual representation of entity
-        Makes pygame.Surface converts it alpha so that entity's alpha can be used
-        Set colorkey to black and fills it with the same color to make it transparent
-        """
-        tile = self.merge_tiles(self.generated_tiles)
-        # size = (40*3, 40*3)
-        # self.image = transform.scale(tile, size)
-        self.image = tile
-        
-        draw.circle(self.image, Color('white'), (self.image.get_rect().x, self.image.get_rect().y), 3)
-
+        self.image = self.merge_tiles(self.generated_tiles)
         self.image.convert_alpha()
-        self.rect = self.image.get_rect()
-        setattr(self.rect, self.anchor, self.position)
-    
-    def testing(self, ENVIRONMENT_SHEET) -> list:
-        ENVIRONMENT_SHEET_list = []
-        for y in range(ENVIRONMENT_SHEET.get_height()//16):
-            for x in range(ENVIRONMENT_SHEET.get_width()//16):
-                ENVIRONMENT_SHEET_list.append(ENVIRONMENT_SHEET.subsurface((16*x, 16*y, 16, 16)))
         
-        for x in ENVIRONMENT_SHEET_list[:]:  # Iterate over a copy to avoid modifying the list while iterating
-            if mask.from_surface(x).count() == 0:
-                ENVIRONMENT_SHEET_list.remove(x)
-        return ENVIRONMENT_SHEET_list
+        draw.circle(self.image, Color('red'), (0, 0), radius=1)
+        
+        self.rect = self.image.get_rect()
+        # setattr(self.rect, self.anchor, self.position)
+        self.rect.centerx = self.position.x
+        self.rect.y = self.position.y
+    
+    # def generate_tiles(self) -> None:
+    #     start_tiles = [[self.GROUND['anchor']]]
+    #     self.generated_tiles = []
+    #     for y in range(len(start_tiles)):
+    #         for x in start_tiles[y]:
+    #             map = x['tile_map']
+    #             layer = []
+    #             for k in map:
+    #                 if 0 in k:
+    #                     continue
+    #                 else:
+    #                     for x in k:
+    #                         layer.append(self.get_ground_tile(x)['tile'])
+    #             self.generated_tiles.append(layer)
