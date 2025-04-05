@@ -1,12 +1,16 @@
-import sys
+import sys, platform
 import asyncio
 import pygame
 import random
+from math import hypot
 
 from utils import *
 from Script.ball import Ball
 from Script.paddle import Paddle
 from Script.text_canvas import text_canvas
+
+if sys.platform == "emscripten":
+    platform.window.canvas.style.imageRendering = "pixelated"
 
 class PyPong():
     def __init__(self) -> None:
@@ -144,6 +148,8 @@ class PyPong():
         self.screen.fill(BACKGROUND_BLACK)
         self.screen.blit(self.background, (0, 0))
 
+        self.dotted_line(self.screen)
+
         self.ball_group.draw(self.screen)
         self.paddle_group.draw(self.screen)
         self.text_canvas_group.draw(self.screen)
@@ -218,8 +224,16 @@ class PyPong():
         self.player1_score, self.player2_score = 0, 0
         self.text_canvas_group.add(self.player1_control_text, self.player2_control_text)
     
-    def test(self):
-        print("tested")
+    def dotted_line(self, surface:pygame.Surface):
+        x1, y1 = pygame.Vector2(WIDTH//2, 0)
+        x2, y2 = pygame.Vector2(WIDTH//2, HEIGHT)
+
+        dist = hypot(x2-x1, y2-y1)
+        dx, dy = (x2 - x1)/dist, (y2-y1)/dist
+        for i in range(0, int(dist), 10):
+            start_pos = x1 + dx*i, y1 + dy*i
+            end_pos = x1 + dx*(i+5), y1 + dy*(i+5)
+            pygame.draw.line(surface, pygame.Color('white'), start_pos, end_pos)
 
 
 async def main() -> None:
