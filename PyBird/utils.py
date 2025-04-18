@@ -18,6 +18,12 @@ BIRD_SHEET = image.load('assets/Retro-Lines-16x16/bird.png')
 BACKGROUND_AIR = []
 GROUND = []
 FOLIAGE = []
+BIRD_IDLE, BIRD_FLAP = [], []
+
+for entry in os.scandir('./assets/Retro-Lines-16x16/Bird/idle/'):
+    BIRD_IDLE.append(image.load(entry.path))
+for entry in os.scandir('./assets/Retro-Lines-16x16/Bird/flap/'):
+    BIRD_FLAP.append(image.load(entry.path))
 
 for entry in os.scandir('./assets/Retro-Lines-16x16/background_air'):
     BACKGROUND_AIR.append(image.load(entry.path))
@@ -27,3 +33,11 @@ for entry in os.scandir('./assets/Retro-Lines-16x16/ground_tiles'):
 
 for entry in os.scandir('./assets/Retro-Lines-16x16/foliage'):
     FOLIAGE.append(image.load(entry.path))
+
+file = open('./assets/Retro-Lines-16x16/autotile_tilemap/mask.txt').readlines()
+
+TILE_MASK = [[int(char) for char in line.strip()] for line in file[:5]]
+# MASKS = list(map(lambda x: list(map(lambda x: int(x), list(x.replace("\n", "").replace(" ", "")))), file[5:]))
+MASKS = [[int(char) for char in line.replace("\n", "").replace(" ", "")] for line in file[6:]]
+# print(MASKS)
+TILE_SET = image.load('./assets/Retro-Lines-16x16/autotile_tilemap/tilemap.png')
