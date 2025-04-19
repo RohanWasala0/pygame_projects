@@ -13,6 +13,7 @@ class PyBird():
     def __init__(self) -> None:
         pygame.init()
         pygame.display.set_caption("PyBird")
+        print(pygame.get_sdl_version())
         
         self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SRCALPHA)
         self._grid_background()
@@ -27,29 +28,23 @@ class PyBird():
         )
 
         self.environment_sheet = pygame.sprite.Group()
+        self.environment_event = pygame.USEREVENT + abs(hash('environment')) % 1000
         for _ in range(5):
-            Environment(
+            temp = Environment(
                 self.environment_sheet,
                 pygame.Vector2(randint(16, WIDTH-16), randint(16, HEIGHT-16)),
                 anchor='center',
                 speed= uniform(10.5, 50),
                 frames= BACKGROUND_AIR,
             )
-        self.environment_event = pygame.USEREVENT + abs(hash('environment')) % 1000
+            # temp.input_chart[self.environment_event] = self.add_air
+            temp.input_chart[pygame.KEYDOWN] = {pygame.K_SPACE: lambda: print("hellp")}
         pygame.time.set_timer(self.environment_event, 4000)
 
         self.ground_group = pygame.sprite.Group()
-        # self.ground = Ground(
-        #     groups= self.ground_group,
-        #     position= pygame.Vector2(WIDTH//2, 16*7),
-        #     height_weidth= [9, 10],
-        #     ground_tilemap= TILE_SET,
-        #     tile_mask= TILE_MASK,
-        #     mask= MASKS,
-        # )
-        self._generate_ground(WIDTH)
+        self._generate_ground(WIDTH, scale= 2)
         self.ground_event = pygame.USEREVENT + abs(hash('ground')) % 1000
-        self.ground_spawn_timer = 15
+        self.ground_spawn_timer = 13
         pygame.time.set_timer(self.ground_event, self.ground_spawn_timer* 1000)
         # self.generate_ground(WIDTH)
         # for x in range(0, WIDTH, 48):
@@ -69,23 +64,21 @@ class PyBird():
 
         self.environment_sheet.draw(self.screen)
         # self.bird_group.draw(self.screen)
-        # self.bird.render()
         self.ground_group.draw(self.screen)
-        
-        # for i, tile in enumerate(self.env_sheet.animation_list):
-        #     scaled = pygame.transform.scale(tile, (40, 40))
-        #     self.screen.blit(scaled, ((i%16)* 40, (i//16)* 40))
         
     def handle_input(self) -> None:
         for event in pygame.event.get():
+            # print(dir(event.type))
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            # self.bird.handling_input(event)
+            for x in self.environment_sheet.sprites():
+                x.handling_input(event)
             if event.type == self.environment_event:
                 self.add_air()
-            # self.bird.handling_input(event)
             if event.type == self.ground_event:
-                self._generate_ground(WIDTH)
+                self._generate_ground(WIDTH, scale= 2)
         
     def update(self, deltaTime: float) -> None:
         # self.bird_group.update(deltaTime)
@@ -101,29 +94,6 @@ class PyBird():
             frames= BACKGROUND_AIR,
         )
 
-    def generate_ground(self, coord_x) -> None:
-        x = randrange(80, HEIGHT-136, 16)
-        y = HEIGHT - 128 - x
-
-        # print(x, x//16)
-        t = Ground(
-            groups= self.ground_group,
-            position= pygame.Vector2(coord_x, 0),
-            height_weidth= (x//16 ,9),
-            ground_tilemap= TILE_SET,
-            tile_mask= TILE_MASK,
-            mask= MASKS,
-        )
-        t.image = pygame.transform.flip(t.image, False, True)
-        Ground(
-            groups= self.ground_group,
-            position= pygame.Vector2(coord_x, (HEIGHT- y)),
-            height_weidth= ((HEIGHT-x)//16 -8, 9),
-            ground_tilemap= TILE_SET,
-            tile_mask= TILE_MASK,
-            mask= MASKS
-        )
-
     def _generate_ground(
             self,
             x_coordinates: int = 0,
@@ -132,7 +102,6 @@ class PyBird():
             tile_size: Tuple[int, int] = (16, 16),
             scale: float = 1.0
     ) -> None:
-        tile_width, tile_height = tile_size
         scaled_tile_width, scaled_tile_height = tuple([x*scale for x in tile_size])
 
         min_height = min_nof_tiles * scaled_tile_height
@@ -143,23 +112,26 @@ class PyBird():
 
         top_ground = Ground(
             groups= self.ground_group,
-            position= pygame.Vector2(x_coordinates, 0),
+            position= pygame.Vector2(x_coordinates + scaled_tile_width*9, 0),
             height_weidth= (int(x//scaled_tile_height), 9),
+            scale= scale,
             ground_tilemap= TILE_SET,
             tile_mask= TILE_MASK,
             mask= MASKS
         )
         top_ground.image = pygame.transform.flip(top_ground.image, False, True)
-        print((int((y)//scaled_tile_height), 9))
         Ground(
             groups= self.ground_group,
-            position= pygame.Vector2(x_coordinates, HEIGHT - y),
+            position= pygame.Vector2(x_coordinates + scaled_tile_width*9, HEIGHT - y),
             height_weidth= (int((y)//scaled_tile_height), 9),
+            scale= scale,
             ground_tilemap= TILE_SET,
             tile_mask= TILE_MASK,
             mask= MASKS
         )
 
+    def print_text(self):
+        print("its working properly")
 
 async def main() -> None:
     deltaTime: float = 0.0
@@ -170,7 +142,7 @@ async def main() -> None:
         game.handle_input()
         game.update(deltaTime)
 
-        deltaTime = clock.tick(60) / 1000
+        deltaTime = clock.tick(120) / 1000
         pygame.display.update()
         await asyncio.sleep(0)
 

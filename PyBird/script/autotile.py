@@ -1,12 +1,13 @@
-from pygame import Vector2, Surface
-from typing import List
+from pygame import Vector2, Surface, transform
+from typing import List, Union
+from random import choice 
 
 class Tile:
     def __init__(
             self,
             position: Vector2 = Vector2(),
             mask: List[List[int]] = [],
-            image: Surface = Surface,
+            image: Union[Surface, List[Surface]] = Surface,
     ):
         """
         Args:
@@ -22,17 +23,21 @@ class Tile:
             screen: Surface,
             blit_position: Vector2,
     ) -> None:
-        screen.blit(self.image, blit_position)
+        if isinstance(self.image, Surface):
+            screen.blit(self.image, blit_position)
+        elif isinstance(self.image, list):
+            screen.blit(choice(self.image), blit_position)
 
 class AutoTile:
     def __init__(
             self,
             tileset: Surface,
             tile_size: int,
+            scale: float,
             tile_mask: List[List[int]],
             mask: List[List[int]],
     ):
-        self.tileset = tileset
+        self.tileset = transform.scale(tileset, (tileset.width*scale, tileset.height*scale))
         self.tile_size = tile_size
         self.tiles: List[Tile] = []
 
@@ -54,6 +59,7 @@ class AutoTile:
             ]
         ]
 
+        tile_by_mask = {}
         for y, row in enumerate(tile_mask):
             for x, tile in enumerate(row):
                 if tile==1:
@@ -72,8 +78,16 @@ class AutoTile:
                         (0, 0), 
                         (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
                     )
+                    mask_key = tuple(tuple(row) for row in single_tile_mask)
+                    if mask_key not in tile_by_mask:
+                        tile_by_mask[mask_key] = []
+                    tile_by_mask[mask_key].append(tile_surface)
                     
-                    self.tiles.append(Tile(Vector2(x, y), single_tile_mask, tile_surface))
+                    #self.tiles.append(Tile(Vector2(x, y), single_tile_mask, tile_surface))
+        for mask in tile_by_mask.keys():
+            list_mask = [list(row) for row in mask]
+            self.tiles.append(Tile(Vector2(x, y), list_mask, tile_by_mask[mask]))
+            
         # print([h.mask for h in self.tiles])
         
     def get_tile(
@@ -114,9 +128,9 @@ class AutoTile:
                     if 0 <= nx < width and 0 <= ny < height:
                         if tile_map[ny][nx] == 0:
                             is_connected = False
-                    # else:
-                    #     # Out of bounds counts as no connection
-                    #     is_connected = False
+                    else:
+                        # Out of bounds counts as no connection
+                        is_connected = False
                 
                 if is_connected and directions:  # Only set to 1 if there are directions to check
                     mask[my][mx] = 1

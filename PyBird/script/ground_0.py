@@ -10,6 +10,7 @@ class Ground(sprite.Sprite):
             groups: sprite.Group,
             position: Vector2,
             height_weidth: Tuple[int, int],
+            scale: float,
             ground_tilemap: Surface,
             tile_mask: List[List[int]],
             mask: List[List[int]],
@@ -18,7 +19,7 @@ class Ground(sprite.Sprite):
         self.group = groups
         self.position: Vector2 = position or Vector2()
         self.velocity: Vector2 = Vector2(-1, 0)* 35
-        self.autotile: AutoTile = AutoTile(ground_tilemap, 16, tile_mask, mask)
+        self.autotile: AutoTile = AutoTile(ground_tilemap, 16*scale, scale, tile_mask, mask)
         self.height, self.width = height_weidth
 
         self.render()
@@ -39,7 +40,7 @@ class Ground(sprite.Sprite):
         center = width//2
         left = center -1
         right = center +1
-        for i in range(temp, height):
+        for i in range(temp, height-1):
             row = []
             for j in range(width):
                 if left <= j <= right:
@@ -50,9 +51,10 @@ class Ground(sprite.Sprite):
                 left -= choice([0, 1])
             if right < width -1:
                 right += choice([0, 1])
-            print(row)
+            # print(row)
 
             ground_tiles[i] = row
+        ground_tiles[height-1] = [1]*width
         return ground_tiles
 
     def _generate_ground(
@@ -82,7 +84,7 @@ class Ground(sprite.Sprite):
     def _display_tiles(
             self
     ) -> Surface:
-        surface: Surface = Surface((16*5, 16*5))
+        surface: Surface = Surface((self.autotile.tile_size*5, self.autotile.tile_size*5))
         matrix = [self.autotile.tiles[i:i+5] for i in range(0, 25, 5)]
         for y, row in enumerate(matrix):
             for x, tile in enumerate(row):
@@ -101,10 +103,10 @@ class Ground(sprite.Sprite):
     def render(self):
         self.tile_map = self._pregenerate_tile_map(self.width, self.height)
         self.image: Surface = self._generate_ground(self.tile_map)
+        # self.image: Surface = self._display_tiles()
         # self.image = transform.scale(self.image, (self.image.width + 16*4, self.image.height)) 
         self.image.set_colorkey(Color('black'))
         self.image.convert_alpha()
-        # self.image: Surface = self._display_tiles()
         self.rect: Rect = self.image.get_rect()
         
         draw.circle(self.image, Color('red'), (0, 0), radius=3)
