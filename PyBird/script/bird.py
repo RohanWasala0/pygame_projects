@@ -1,40 +1,42 @@
 from pygame import sprite, Vector2, event, Rect, Color, Surface, SRCALPHA, draw, transform, math
-from pygame import USEREVENT, time, KEYDOWN, K_SPACE
-from typing import Tuple, Optional, List
+from pygame import USEREVENT, mask, KEYDOWN, K_SPACE
+from typing import Tuple, Optional, List, Dict
 
 class Bird(sprite.Sprite):
     def __init__(self, 
                 groups: sprite.Group,
-                position: Optional[Vector2] = None, 
+                idle_animation_list: List[Surface],
+                flap_animation_list: List[Surface], 
+                position: Vector2 = Vector2(), 
                 anchor: str = 'topleft',
-                idle: List[Surface] = [],
-                flap: List[Surface] = [], 
+                scale: float = 1,
                 ) -> None:
         super().__init__(groups)
         
         self.group = groups
-        self.position = position or Vector2()
-        self.velocity = Vector2()
-        self.gravity = 180
-        self.direction = Vector2(0, 1)
-        self.anchor = anchor
+        self.anchor: str = anchor
+        self.scale: float = scale
+        self.gravity: float = 100
+        self.jump_factor: int = -300
+        self.position: Vector2 = position or Vector2()
+        self.velocity: Vector2 = Vector2()
+        self.scaled_size = tuple([dimension* scale for dimension in idle_animation_list[0].size])
         
-        self.idle = idle
-        self.flap = flap
-        self.current_animation = 'idle'
-        self.animation_event = USEREVENT + abs(hash('animation'))%1000
-        self.frame = 0
-        time.set_timer(self.animation_event, 200)
+        self.frame: int = 0
+        self.current_animation: str = 'flap'
+        self.animation_chart: Dict[str, AnimatedObject] = {
+            'idle': AnimatedObject(idle_animation_list, 100),
+            'flap': AnimatedObject(flap_animation_list, 50),
+        }        
 
         self.input_chart = {
-            self.animation_event : self.update_animation,
             KEYDOWN : {K_SPACE: self.flap_action},
         }
         
         self.image: Surface = Surface((0, 0), SRCALPHA)
-        self.image.set_colorkey(Color(0, 0, 0, 0))
-        self.rect: Rect = self.image.get_rect()
-        setattr(self.rect, self.anchor, self.position)
+        self.render()
+        self.animated_object: AnimatedObject = self.animation_chart[self.current_animation]
+        self.mask = mask.from_surface(self.image)
         
     def handling_input(self, event: event) -> None:
         if event_type_action := self.input_chart.get(event.type):
@@ -48,18 +50,21 @@ class Bird(sprite.Sprite):
                     print(f"Error executing the action:{action} with error:{e}")
     
     def update(self, deltaTime: float):
-        self.direction.y += 0.2
-        self.direction.y = math.clamp(self.direction.y, -1, 1)
-        self.velocity = self.direction * self.gravity
-        position = self.position + (self.velocity * deltaTime)
-        self.position = self.position.smoothstep(position, 0.6)
+        self.gravity += 10 
+        self.gravity = math.clamp(self.gravity, 100, 800)
+        self.velocity.y += self.gravity * deltaTime
+        self.position += self.velocity * deltaTime
+        
+        self.animated_object.play(deltaTime)
+        self.image = transform.scale(self.animated_object.current_frame, self.scaled_size)
+        self.rect: Rect = self.image.get_rect()
         setattr(self.rect, self.anchor, self.position)
+        self.mask = mask.from_surface(self.image)
+        # self.image.blit(self.mask.to_surface())
     
     def render(self):
-        self.image = transform.scale(self.idle[int(self.frame)], (16*3, 16*3)) if self.current_animation == 'idle' else transform.scale(self.flap[int(self.frame)], (16*3, 16*3))
+        self.image = transform.scale(self.animation_chart[self.current_animation].current_frame, self.scaled_size)
         self.image.set_colorkey(Color(0, 0, 0, 0))
-        # print(int(self.frame))
-        # self.image.fill(Color(0, 0, 0, 0))
 
         draw.rect(
             self.image, 
@@ -72,30 +77,84 @@ class Bird(sprite.Sprite):
         self.rect = self.image.get_rect()
         setattr(self.rect, self.anchor, self.position)
     
-    def update_animation(self):
-        animation = self.idle if self.current_animation == 'idle' else self.flap
-        self.frame += 1
-        if self.frame >= len(animation):
-            if self.current_animation == 'flap':
-                self.current_animation = 'idle'
-            self.frame = 0
-    
     def flap_action(self):
-        setattr(self.direction, 'y', -2)
-        if self.current_animation == 'idle':
-            self.current_animation = 'flap'
-            self.frame = 0
-    # def dividing_sheet(self) -> None:
-    #     idle_sheet = Surface((16*2, 16))
-    #     jump_sheet = Surface((16*4, 16))
+        self.velocity.y = self.jump_factor
+        
+        # self.change_animation(
+        #     _from = 'idle',
+        #     _to = 'flap'
+        # )
+        # self.animation_chart[self.current_animation].play()
+    
+    def change_animation(
+            self,
+            _from: str,
+            _to: str,
+    ):
+        if self.current_animation != _from or self.current_animation == _to:
+            return 
+        
+        current_animation: AnimatedObject = self.animation_chart[_from]
+        if current_animation.animation_completed:
+            current_animation.reset()
+            self.current_animation = _to
+            self.animation_chart[_to].reset()
+            # self.animation_chart[_to].reset()
+            print("changed")
+            return
+        else:
+            current_animation.loop = False
+            # self.change_animation(_from, _to)
+        
 
-    #     idle_sheet.blit(self.sheet, (0, 0), (0, 0, 16*2, 16))
-    #     jump_sheet.blit(self.sheet, (0, 0), (16*3, 0, 16*4, 16))
 
-    #     self.idle_animation_list = []
-    #     self.jump_animation_list = []
+class AnimatedObject:
+    def __init__(
+            self,
+            frames: List[Surface],
+            duration: int,
+            loop: bool = True,
+    ):
+        self.index: int = 0
+        self.loop: bool = loop
+        self.running: bool = True
+        self.duration: int = duration
+        self.animation_timer: float = 0.0 
+        self.frames: List[Surface] = frames
+        self.animation_completed: bool = False
+        self.current_frame: Surface = self.frames[self.index]
 
-    #     for x in range(2):
-    #         self.idle_animation_list.append(transform.scale(idle_sheet.subsurface((16*x, 0, 16, 16)), (16*4, 16*4)))
-    #     for y in range(4):
-    #         self.jump_animation_list.append(transform.scale(jump_sheet.subsurface((16*y, 0, 16, 16)), (16*4, 16*4)))
+    def play(
+            self,
+            deltaTime: float,
+    ) -> None:
+        if not self.running or self.animation_completed: 
+            return
+        
+        self.animation_timer += 1
+        if self.animation_timer >= self.duration:
+            self.animation_timer = 0
+            self.index += 1
+            if self.index >= len(self.frames):
+                if self.loop:
+                    self.index = 0
+                else:
+                    self.index = len(self.frames) - 1
+                    self.animation_completed = True
+                    self.running = False
+            self.current_frame = self.frames[self.index]
+    
+    def stop(
+            self,
+    ) -> None:
+        self.running = False
+
+    def reset(
+            self,
+    ) -> None:
+        self.frame = 0
+        self.current_frame = self.frames[self.frame]
+        self.animation_timer = 0
+        self.running = True
+        self.animation_completed = False
+        

@@ -1,19 +1,18 @@
 from pygame import Vector2, Surface, transform
-from typing import List, Union
+from typing import List, Union, Tuple, Dict, Optional
 from random import choice 
 
 class Tile:
     def __init__(
             self,
-            position: Vector2 = Vector2(),
-            mask: List[List[int]] = [],
-            image: Union[Surface, List[Surface]] = Surface,
+            mask: List[List[int]],
+            image: Union[Surface, List[Surface]],
     ):
-        """
+        """Tile class represents a single tile with a connectivity mask and image
+
         Args:
-            position: position in the tileset
-            mask: 3x3 grid representing which sides connect
-            image: The pygame Surface for this tile
+            mask (List[List[int]]): 3x3 grid indicating the connectivity of the tile.
+            image (Union[Surface, List[Surface]]): Surface or List of Surfaces representing tile sprite.
         """
         self.mask = mask
         self.image = image
@@ -23,22 +22,37 @@ class Tile:
             screen: Surface,
             blit_position: Vector2,
     ) -> None:
-        if isinstance(self.image, Surface):
-            screen.blit(self.image, blit_position)
-        elif isinstance(self.image, list):
-            screen.blit(choice(self.image), blit_position)
+        """Blit the tile image on the screen at the given position
+
+        Args:
+            screen (Surface): The Surface to blit on to 
+            blit_position (Vector2): The position to blit the tile image at
+        """
+        image_to_blit = self.image if isinstance(self.image, Surface) else choice(self.image)
+        screen.blit(image_to_blit, blit_position)
 
 class AutoTile:
     def __init__(
             self,
             tileset: Surface,
-            tile_size: int,
             scale: float,
             tile_mask: List[List[int]],
-            mask: List[List[int]],
+            mask_template: List[List[int]],
     ):
-        self.tileset = transform.scale(tileset, (tileset.width*scale, tileset.height*scale))
-        self.tile_size = tile_size
+        """AutoTile handles automic selection of tiles based on the adjacent tiles
+
+        Args:
+            tileset (Surface): Surface containing the full tilemap
+            scale (float): Scaling factor for the tiles
+            tile_mask (List[List[int]]): 2D grid marking which tiles are used 
+            mask_template (List[List[int]]): 2D Template defining 3x3 connectivity for each tile
+        """
+        self.tileset: Surface = tileset
+        self.tile_size: Vector2 = Vector2(
+            self.tileset.width//len(tile_mask[0]), 
+            self.tileset.height//len(tile_mask)
+        )
+        self.scaled_tile_size: Vector2 = self.tile_size*scale
         self.tiles: List[Tile] = []
 
         self.directions = [
@@ -59,42 +73,64 @@ class AutoTile:
             ]
         ]
 
-        tile_by_mask = {}
+        self._generate_tiles(tile_mask, mask_template, scale)
+
+    def _generate_tiles(
+            self,
+            tile_mask: List[List[int]],
+            mask_template: List[List[int]],
+            scale: float
+    ) -> None:
+        """Generate tiles Tiles class objects based on tile_mask and mask_template"""
+        tile_by_mask: Dict[Tuple, List[Surface]] = {}
+
         for y, row in enumerate(tile_mask):
             for x, tile in enumerate(row):
-                if tile==1:
+                if tile == 1:
                     single_tile_mask = []
                     for i in range(3):
                         row_start = x*3
                         row_end = x*3 +3
-                        if y*3+i < len(mask) and row_end <= len(mask[y*3+i]):
-                            single_tile_mask.append(mask[y * 3 + i][row_start:row_end])
+                        if y*3+i < len(mask_template) and row_end <= len(mask_template[y*3+i]):
+                            single_tile_mask.append(mask_template[y * 3 + i][row_start:row_end])
                         else:
                             single_tile_mask.append([0, 0, 0])
-                    
-                    tile_surface = Surface((self.tile_size, self.tile_size))
-                    tile_surface.blit(
-                        self.tileset, 
-                        (0, 0), 
-                        (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
-                    )
+
                     mask_key = tuple(tuple(row) for row in single_tile_mask)
-                    if mask_key not in tile_by_mask:
-                        tile_by_mask[mask_key] = []
-                    tile_by_mask[mask_key].append(tile_surface)
+                    tile_surface = self.make_tile_surface(Vector2(x, y), scale)
+                    tile_by_mask.setdefault(mask_key, []).append(tile_surface)
                     
-                    #self.tiles.append(Tile(Vector2(x, y), single_tile_mask, tile_surface))
         for mask in tile_by_mask.keys():
             list_mask = [list(row) for row in mask]
-            self.tiles.append(Tile(Vector2(x, y), list_mask, tile_by_mask[mask]))
-            
-        # print([h.mask for h in self.tiles])
-        
+            self.tiles.append(Tile(list_mask, tile_by_mask[mask]))
+
+    def make_tile_surface(
+            self,
+            position: Vector2,
+            scale: float,
+    ) -> Surface:
+        """Cuts, Scales a Surface from the tilemap to make tile sprite 
+
+        Args:
+            position (Vector2): The tile position in the tileset grid
+
+        Returns:
+            Surface: The tile sprite as a surface scaled to factor 
+        """
+        x, y = position.x* self.tile_size.x, position.y* self.tile_size.y
+        tile: Surface = Surface((self.tile_size.x, self.tile_size.y))
+        tile.blit(
+            self.tileset,
+            (0, 0),
+            (x, y, self.tile_size.x, self.tile_size.y)
+        )
+        return transform.scale(tile, (tile.width* scale, tile.height* scale))
+
     def get_tile(
             self,
             mask: List[List[int]],
     ) -> Surface:
-        """
+        """Finds a tile maching a specific 3x3 match
         Returns:
             The matching Tile or None if not found
         """
@@ -109,7 +145,7 @@ class AutoTile:
             position: Vector2,
             width: int, height: int
     ) -> List[List[int]]:
-        """ 
+        """Generates a 3x3 connectivity mask for a given tile position 
         Returns:
             A 3x3 mask representing connections to adjacent tiles
         """
@@ -124,16 +160,41 @@ class AutoTile:
                 for dx, dy in directions:
                     nx, ny = int(position.x + dx), int(position.y + dy)
                     
+                    out_of_bounds = not (0 <= nx < width and  0 <= ny < height)
+                    direction = self._get_direction(nx, ny)
                     # Check if the position is within bounds and has a tile
-                    if 0 <= nx < width and 0 <= ny < height:
+                    if out_of_bounds:
+                        if direction == "above":
+                            is_connected = False
+                        elif direction == "below":
+                            is_connected = True
+                        elif direction in ("left", "right"):
+                            is_connected = int(position.y) == height -1 
+                    else:
                         if tile_map[ny][nx] == 0:
                             is_connected = False
-                    else:
-                        # Out of bounds counts as no connection
-                        is_connected = False
                 
                 if is_connected and directions:  # Only set to 1 if there are directions to check
                     mask[my][mx] = 1
                     
         return mask
 
+    def _get_direction(
+            self,
+            dx: int, dy: int,
+    ) -> str:
+        """Helper function 
+        Converts a directional offset into a string
+
+        Args:
+            dx (int): X offset
+            dy (int): Y offset      
+
+        Returns:
+            str: A string representing direction 
+        """
+        if dy == -1: return "above"
+        if dy == 1: return "below"
+        if dx == -1: return "left"
+        if dx == 1: return "right"
+        return "unknown"

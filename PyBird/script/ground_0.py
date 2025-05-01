@@ -1,4 +1,4 @@
-from pygame import sprite, Surface, Vector2, draw, Color, SRCALPHA, Rect, transform
+from pygame import sprite, Surface, Vector2, Color, SRCALPHA, Rect, mask
 from script.autotile import AutoTile, Tile
 from random import choice
 from typing import List, Tuple
@@ -8,54 +8,63 @@ class Ground(sprite.Sprite):
     def __init__(
             self,
             groups: sprite.Group,
-            position: Vector2,
-            height_weidth: Tuple[int, int],
-            scale: float,
             ground_tilemap: Surface,
             tile_mask: List[List[int]],
-            mask: List[List[int]],
+            _mask: List[List[int]],
+            height_width: Tuple[int, int],
+            speed: float = 45,
+            scale: float = 1.0,
+            alpha: int = 255,
+            position: Vector2 = Vector2(),
+            anchor: str = 'topleft'
     ) -> None:
+        """A Tile based ground obstacle that automatically generates connected tiles
+
+        Args:
+            groups (sprite.Group): Sprite group to which the object belongs 
+            ground_tilemap (Surface): Scource tileset surface
+            tile_mask (List[List[int]]): 2D grid defining the tile presence in the tilset
+            mask (List[List[int]]): 2D list defining a 3x3 connection mask for autotiling
+            speed (float, optional): Speed of the obstacle
+            scale (float, optional): Scale factor for a tile. Defaults to 1.0.
+            position (Vector2, optional): Initial world position of the obstacle. Defaults to Vector2().
+            anchor (str, optional): Attribute of the rect to aline the surface of the ground. Defaults to 'topleft'.
+        """
         super().__init__(groups)
         self.group = groups
+        self.anchor: str = anchor
+        self.scale: float = scale
+        self.height, self.width = height_width
         self.position: Vector2 = position or Vector2()
-        self.velocity: Vector2 = Vector2(-1, 0)* 35
-        self.autotile: AutoTile = AutoTile(ground_tilemap, 16*scale, scale, tile_mask, mask)
-        self.height, self.width = height_weidth
+        self.velocity: Vector2 = Vector2(-1, 0)* speed
+        self.autotile: AutoTile = AutoTile(ground_tilemap, scale, tile_mask, _mask)
+        self.alpha: int = alpha
 
         self.render()
+        self.mask = mask.from_surface(self.image)
 
     def _pregenerate_tile_map(
             self,
             width: int,
             height: int,
     ) -> List[List[int]]:
-        
-        ground_tiles: List[List[int]] = [[0 for _ in range(width)] for _ in range(height)]
-        temp = 0
-        if width < height:
-            for x in range(height-width):
-                ground_tiles[x] = [0] * ((width - 3) // 2) + [1, 1, 1] + [0] * ((width - 3) // 2)
-            temp = height-width
+        """Generates a procedural tile map with a center platform shape
+        Return: 
+            The 2D grid of procedurally generated tilemap 
+        """ 
+        tile_map: List[List[int]] = [[0]* width for _ in range(height)]
+        tile_map[0] = [0] * ((width - 3) // 2) + [1, 1, 1] + [0] * ((width - 3) // 2)
+        center: int = width // 2
+        left, right = center -1, center +1
 
-        center = width//2
-        left = center -1
-        right = center +1
-        for i in range(temp, height-1):
-            row = []
-            for j in range(width):
-                if left <= j <= right:
-                    row.append(1)
-                else:
-                    row.append(0)
-            if left > 0:
-                left -= choice([0, 1])
-            if right < width -1:
-                right += choice([0, 1])
-            # print(row)
+        for y in range(height -1):
+            for x in range(width):
+                tile_map[y][x] = 1 if left <= x <= right else 0
+            left = max(0, left - choice([0, 1]))
+            right = min(width -1, right + choice([0, 1]))
 
-            ground_tiles[i] = row
-        ground_tiles[height-1] = [1]*width
-        return ground_tiles
+        tile_map[height -1] = [1] * width
+        return tile_map
 
     def _generate_ground(
             self,
@@ -64,60 +73,112 @@ class Ground(sprite.Sprite):
         
         map_height = len(tile_map)
         map_width = len(tile_map[0]) if map_height>0 else 0
-        print(map_height, map_width)
-        surface = Surface((map_width*self.autotile.tile_size, map_height*self.autotile.tile_size), SRCALPHA)
+        tile_size = self.autotile.scaled_tile_size
+        surface = Surface((map_width*tile_size.x, map_height*tile_size.y), SRCALPHA)
 
         for y, row in enumerate(tile_map):
             for x, cell in enumerate(row):
-                if cell == 1:
+                if cell and x != 0:
                     mask = self.autotile.generate_conectivity_mask(tile_map, Vector2(x, y), map_width, map_height)
+                    tile: Tile = self.autotile.get_tile(mask) or self.autotile.tiles[0]
+                    position = Vector2(tile_size.x* x, tile_size.y* y)
+                    tile.draw(surface, position)
 
-                    tile: Tile = self.autotile.get_tile(mask)
-                    if tile:
-                        tile.draw(surface, Vector2(x* self.autotile.tile_size, y* self.autotile.tile_size))
-                    else:
-                        if self.autotile.tiles:
-                            fallback_tile: Tile = self.autotile.tiles[8]
-                            fallback_tile.draw(surface, Vector2(x* self.autotile.tile_size, y* self.autotile.tile_size)) 
         return surface
 
     def _display_tiles(
             self
     ) -> Surface:
-        surface: Surface = Surface((self.autotile.tile_size*5, self.autotile.tile_size*5))
-        matrix = [self.autotile.tiles[i:i+5] for i in range(0, 25, 5)]
-        for y, row in enumerate(matrix):
-            for x, tile in enumerate(row):
-                surface.blit(tile.image, (x*self.autotile.tile_size, y*self.autotile.tile_size))
-                print(f'at:({x},{y})\nmask:{tile.mask}')
+        """Displays a preview of all available tiles (for debugging).
+
+        Returns:
+            Surface: Surface of every single tile in the tilemap
+        """
+        column = 7
+        surface: Surface = Surface((self.autotile.scaled_tile_size.x* column, 
+                                    self.autotile.scaled_tile_size.y* column))
+        
+        for idx, tile in enumerate(self.autotile.tiles):
+            x = idx % column
+            y = idx // column
+            tile.draw(surface, Vector2(x* self.autotile.scaled_tile_size.x, y* self.autotile.scaled_tile_size.y))
         return surface
     
+    
+    def _reconnect_tiles(
+            self
+    ) -> List[List[int]]:
+        sprites = sorted(self.group.sprites(), key = lambda s: s.position.y)
+
+        idx = sprites.index(self)
+        new_tile_map = [[0] + row.copy() + [0] for row in self.tile_map]
+
+        if idx > 0:
+            left_sprite = sprites[idx -1]
+            if hasattr(left_sprite, "tile_map"):
+                left_map = left_sprite.tile_map
+                temp = 0 
+                if len(left_map) > len(self.tile_map):
+                    temp = len(left_map) - len(self.tile_map)
+                elif len(left_map) < len(self.tile_map):
+                    temp = - len(self.tile_map) - len(left_map)
+                for y in range(self.height):
+                    # If the left sprite has a tile at the rightmost column, connect it to our leftmost column
+                    u = y + temp if y + temp >= 0 else 0
+                    if y < len(left_map) and left_map[u][-1] == 1:
+                        new_tile_map[y][0] = 1
+
+        # Check right neighbor
+        if idx < len(sprites) - 1:
+            right_sprite = sprites[idx + 1]
+            if hasattr(right_sprite, "tile_map"):
+                right_map = right_sprite.tile_map
+                temp = 0 
+                if len(right_map) > len(self.tile_map):
+                    temp = len(right_map) - len(self.tile_map)
+                elif len(right_map) < len(self.tile_map):
+                    temp = -len(self.tile_map) - len(right_map)
+                for y in range(self.height):
+                    # If the right sprite has a tile at the leftmost column, connect it to our rightmost column
+                    u = y + temp if y + temp >= 0 else 0
+                    if y < len(right_map) and right_map[u][0] == 1:
+                        new_tile_map[y][-1] = 1
+        new_tile_map[self.height -1] = [1] * (self.width + 2)
+        return new_tile_map
+
+    
     def update(self, deltaTime: float):
-        self.kill() if self.position.x + self.image.width//2 < 0 else None
-        
+        if self.position.x + self.image.width < 0: self.kill()
+
         position = self.position + (self.velocity * deltaTime)
-        self.position = self.position.smoothstep(position, 0.6)
-        self.rect.centerx = self.position.x
-        self.rect.y = self.position.y
+        # self.position = Vector2.lerp(position, self.position, 0.6)
+        self.position = position
+        setattr(self.rect, self.anchor, self.position)
+        self.mask = mask.from_surface(self.image)
+        # self.image.blit(self.mask.to_surface())
     
     def render(self):
         self.tile_map = self._pregenerate_tile_map(self.width, self.height)
-        self.image: Surface = self._generate_ground(self.tile_map)
-        # self.image: Surface = self._display_tiles()
-        # self.image = transform.scale(self.image, (self.image.width + 16*4, self.image.height)) 
+        self.tile_map = self._reconnect_tiles()
+        ground_surface: Surface = self._generate_ground(self.tile_map)
+        # ground_surface: Surface = self._display_tiles()
+        ground_surface.set_alpha(self.alpha)
+        ground_surface.set_colorkey(Color('black'))
+
+        self.image: Surface = Surface(ground_surface.size)
+        self.image.blit(ground_surface)
         self.image.set_colorkey(Color('black'))
-        self.image.convert_alpha()
+        
+        # draw.circle(self.image, Color('red'), (0, 0), radius=3)
+        # draw.rect(
+        #     self.image,
+        #     Color('white'),
+        #     self.image.get_rect(),
+        #     width= 1,
+        # )
+        
         self.rect: Rect = self.image.get_rect()
+        setattr(self.rect, self.anchor, self.position)
         
-        draw.circle(self.image, Color('red'), (0, 0), radius=3)
-        draw.rect(
-            self.image,
-            Color('white'),
-            self.image.get_rect(),
-            width= 1,
-        )
-        
-        self.rect = self.image.get_rect()
-        # setattr(self.rect, self.anchor, self.position)
-        self.rect.centerx = self.position.x
-        self.rect.y = self.position.y
+
+

@@ -2,8 +2,8 @@ from pygame import Color, image
 import os
 from typing import Tuple
 
-WIDTH: int = 640
-HEIGHT: int = 480
+WIDTH: int = 720
+HEIGHT: int = 450
 SCREEN_SIZE: Tuple[int, int] = (WIDTH, HEIGHT)
 
 BLACK = Color(0,0,0)
