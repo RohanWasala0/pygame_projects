@@ -1,4 +1,4 @@
-from pygame import KEYDOWN, KEYUP
+from pygame import KEYDOWN, KEYUP, FINGERDOWN
 from pygame import sprite, Vector2, event, draw, Color, Surface, Rect, math, display
 from typing import Tuple, Optional
 
@@ -29,6 +29,7 @@ class Paddle(sprite.Sprite):
                 input_keys[0]: lambda: setattr(self, 'velocity', self.add_velocity()),
                 input_keys[1]: lambda: setattr(self, 'velocity', self.add_velocity()),
             },
+            FINGERDOWN: lambda event: self.goto_finger_position(event.x, event.y),
         }
         
         self.render()
@@ -40,14 +41,17 @@ class Paddle(sprite.Sprite):
         If the action exist in the input chart execute the mapped action 
         """
         if event_type_action := self.input_chart.get(event.type):
-            action = event_type_action.get(getattr(event, 'key', None)) or \
-                     event_type_action.get(getattr(event, 'ui_element', None))
-            
-            if action:
+            if isinstance(event_type_action, dict):
+                if action := event_type_action.get(getattr(event, 'key', None)):
+                    try:
+                        action()
+                    except Exception as e:
+                        print(f"Error executing the action:{action} with error:{e}")
+            else:
                 try:
-                    action()
+                    event_type_action(event)
                 except Exception as e:
-                    print(f"Error executing the action:{action} with error:{e}")
+                    print(f"Error executing the action: {event_type_action} with error: {e}")
     
     def update(self, deltaTime: float):
         self.conditions()
@@ -80,6 +84,9 @@ class Paddle(sprite.Sprite):
 
     def add_velocity(self, direction: Tuple[int, int] = (0, 0)):
         return Vector2(direction) * self.speed
+    
+    def goto_finger_position(self, finger_position_x: float, finger_position_y: float):
+        print(finger_position_x, finger_position_y)    
     
     def reset_position(self) -> None:
         self.position.y = display.get_window_size()[1]//2
