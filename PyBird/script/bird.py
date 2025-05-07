@@ -1,5 +1,5 @@
 from pygame import sprite, Vector2, event, Rect, Color, Surface, SRCALPHA, draw, transform, math
-from pygame import USEREVENT, mask, KEYDOWN, K_SPACE
+from pygame import USEREVENT, mask, KEYDOWN, K_SPACE, K_ESCAPE
 from typing import Tuple, Optional, List, Dict
 
 class Bird(sprite.Sprite):
@@ -14,12 +14,13 @@ class Bird(sprite.Sprite):
         super().__init__(groups)
         
         self.group = groups
+        self.isPlaying: bool = False
         self.anchor: str = anchor
         self.scale: float = scale
-        self.gravity: float = 100
+        self.gravity: float = 0
         self.jump_factor: int = -300
-        self.position: Vector2 = position or Vector2()
         self.velocity: Vector2 = Vector2()
+        self.position: Vector2 = position or Vector2()
         self.scaled_size = tuple([dimension* scale for dimension in idle_animation_list[0].size])
         
         self.frame: int = 0
@@ -30,7 +31,9 @@ class Bird(sprite.Sprite):
         }        
 
         self.input_chart = {
-            KEYDOWN : {K_SPACE: self.flap_action},
+            KEYDOWN : {
+                K_SPACE: self.flap_action,
+                K_ESCAPE: self.pause},
         }
         
         self.image: Surface = Surface((0, 0), SRCALPHA)
@@ -40,8 +43,11 @@ class Bird(sprite.Sprite):
         
     def handling_input(self, event: event) -> None:
         if event_type_action := self.input_chart.get(event.type):
-            action = event_type_action if callable(event_type_action) else event_type_action.get(getattr(event, 'key', None)) or \
-                     event_type_action.get(getattr(event, 'ui_element', None)) 
+            if callable(event_type_action):
+                action = event_type_action 
+            else:
+                action = event_type_action.get(getattr(event, 'key', None)) or\
+                event_type_action.get(getattr(event, 'ui_element', None)) 
             
             if action:
                 try:
@@ -50,8 +56,8 @@ class Bird(sprite.Sprite):
                     print(f"Error executing the action:{action} with error:{e}")
     
     def update(self, deltaTime: float):
-        self.gravity += 10 
-        self.gravity = math.clamp(self.gravity, 100, 800)
+        self.gravity += 10 if self.isPlaying else 0
+        self.gravity = math.clamp(self.gravity, 0, 800)
         self.velocity.y += self.gravity * deltaTime
         self.position += self.velocity * deltaTime
         
@@ -78,13 +84,22 @@ class Bird(sprite.Sprite):
         setattr(self.rect, self.anchor, self.position)
     
     def flap_action(self):
-        self.velocity.y = self.jump_factor
+        self.velocity.y = self.jump_factor if self.isPlaying else -90
+        self.isPlaying = True
         
         # self.change_animation(
         #     _from = 'idle',
         #     _to = 'flap'
         # )
         # self.animation_chart[self.current_animation].play()
+    
+    def pause(
+        self
+    ) -> None:
+        print("paused")
+        self.velocity = Vector2()
+        self.gravity = 0
+        self.isPlaying = False
     
     def change_animation(
             self,

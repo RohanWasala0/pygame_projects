@@ -1,9 +1,9 @@
-from pygame import Color, image
+from pygame import Color, image, Vector2
 import os
 from typing import Tuple
 
-WIDTH: int = 720
-HEIGHT: int = 450
+WIDTH: int = 1024
+HEIGHT: int = 512
 SCREEN_SIZE: Tuple[int, int] = (WIDTH, HEIGHT)
 
 BLACK = Color(0,0,0)
@@ -12,7 +12,7 @@ PADDLE_BROWN = Color('#3C3D37')
 BALL_GREY = Color('#697565')
 PARTICLES_BEIGE = Color('#ECDFCC')
 
-FONT_PATH = 'assets/pixcel_font.ttf'
+FONT_PATH = 'assets/Baskic8.otf'
 ENVIRONMENT_SHEET = image.load('assets/Retro-Lines-16x16/Environment.png')
 BIRD_SHEET = image.load('assets/Retro-Lines-16x16/bird.png')
 BACKGROUND_AIR = []
@@ -41,3 +41,4 @@ TILE_MASK = [[int(char) for char in line.strip()] for line in file[:5]]
 MASKS = [[int(char) for char in line.replace("\n", "").replace(" ", "")] for line in file[6:]]
 # print(MASKS)
 TILE_SET = image.load('./assets/Retro-Lines-16x16/autotile_tilemap/tilemap.png')
+TILE_SIZE = Vector2(16, 16)

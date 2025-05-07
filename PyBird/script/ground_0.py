@@ -1,4 +1,4 @@
-from pygame import sprite, Surface, Vector2, Color, SRCALPHA, Rect, mask
+from pygame import sprite, Surface, Vector2, Color, SRCALPHA, Rect, mask, Mask, transform, draw, BLEND_RGBA_MULT
 from script.autotile import AutoTile, Tile
 from random import choice
 from typing import List, Tuple
@@ -8,21 +8,21 @@ class Ground(sprite.Sprite):
     def __init__(
             self,
             groups: sprite.Group,
-            ground_tilemap: Surface,
-            tile_mask: List[List[int]],
             _mask: List[List[int]],
+            _ground_tileset: Surface,
+            _tile_mask: List[List[int]],
             height_width: Tuple[int, int],
+            position: Vector2 = Vector2(),
+            alpha: int = 255,
             speed: float = 45,
             scale: float = 1.0,
-            alpha: int = 255,
-            position: Vector2 = Vector2(),
             anchor: str = 'topleft'
     ) -> None:
         """A Tile based ground obstacle that automatically generates connected tiles
 
         Args:
             groups (sprite.Group): Sprite group to which the object belongs 
-            ground_tilemap (Surface): Scource tileset surface
+            ground_tilemap (Surface): Source tileset surface
             tile_mask (List[List[int]]): 2D grid defining the tile presence in the tilset
             mask (List[List[int]]): 2D list defining a 3x3 connection mask for autotiling
             speed (float, optional): Speed of the obstacle
@@ -32,21 +32,22 @@ class Ground(sprite.Sprite):
         """
         super().__init__(groups)
         self.group = groups
+        self.alpha: int = alpha
         self.anchor: str = anchor
         self.scale: float = scale
+        self.pass_check: bool = False
         self.height, self.width = height_width
-        self.position: Vector2 = position or Vector2()
+        self.position: Vector2 = position or Vector2() 
         self.velocity: Vector2 = Vector2(-1, 0)* speed
-        self.autotile: AutoTile = AutoTile(ground_tilemap, scale, tile_mask, _mask)
-        self.alpha: int = alpha
+        self.autotile: AutoTile = AutoTile(_ground_tileset, _tile_mask, _mask)
 
         self.render()
-        self.mask = mask.from_surface(self.image)
+        self.mask: Mask = mask.from_surface(self.image)
 
     def _pregenerate_tile_map(
             self,
-            width: int,
             height: int,
+            width: int,
     ) -> List[List[int]]:
         """Generates a procedural tile map with a center platform shape
         Return: 
@@ -73,13 +74,15 @@ class Ground(sprite.Sprite):
         
         map_height = len(tile_map)
         map_width = len(tile_map[0]) if map_height>0 else 0
-        tile_size = self.autotile.scaled_tile_size
+        tile_size = self.autotile.tile_size
         surface = Surface((map_width*tile_size.x, map_height*tile_size.y), SRCALPHA)
+        surface.set_colorkey(Color('white'))
+        surface.fill(Color('white'))
 
         for y, row in enumerate(tile_map):
             for x, cell in enumerate(row):
-                if cell and x != 0:
-                    mask = self.autotile.generate_conectivity_mask(tile_map, Vector2(x, y), map_width, map_height)
+                if cell and x != len(row):
+                    mask = self.autotile.generate_connectivity_mask(tile_map, Vector2(x, y), map_width, map_height)
                     tile: Tile = self.autotile.get_tile(mask) or self.autotile.tiles[0]
                     position = Vector2(tile_size.x* x, tile_size.y* y)
                     tile.draw(surface, position)
@@ -95,23 +98,24 @@ class Ground(sprite.Sprite):
             Surface: Surface of every single tile in the tilemap
         """
         column = 7
-        surface: Surface = Surface((self.autotile.scaled_tile_size.x* column, 
-                                    self.autotile.scaled_tile_size.y* column))
+        tile_size = self.autotile.tile_size
+        surface: Surface = Surface((tile_size.x* column, 
+                                    tile_size.y* column))
         
         for idx, tile in enumerate(self.autotile.tiles):
             x = idx % column
             y = idx // column
-            tile.draw(surface, Vector2(x* self.autotile.scaled_tile_size.x, y* self.autotile.scaled_tile_size.y))
+            tile.draw(surface, Vector2(x* tile_size.x, y* tile_size.y))
         return surface
     
-    
     def _reconnect_tiles(
-            self
+            self,
+            tile_map: List[List[int]]
     ) -> List[List[int]]:
         sprites = sorted(self.group.sprites(), key = lambda s: s.position.y)
 
         idx = sprites.index(self)
-        new_tile_map = [[0] + row.copy() + [0] for row in self.tile_map]
+        new_tile_map = [[0] + row.copy() + [0] for row in tile_map]
 
         if idx > 0:
             left_sprite = sprites[idx -1]
@@ -150,24 +154,20 @@ class Ground(sprite.Sprite):
     def update(self, deltaTime: float):
         if self.position.x + self.image.width < 0: self.kill()
 
-        position = self.position + (self.velocity * deltaTime)
-        # self.position = Vector2.lerp(position, self.position, 0.6)
-        self.position = position
+        self.position = self.position + (self.velocity * deltaTime)
         setattr(self.rect, self.anchor, self.position)
         self.mask = mask.from_surface(self.image)
-        # self.image.blit(self.mask.to_surface())
     
     def render(self):
-        self.tile_map = self._pregenerate_tile_map(self.width, self.height)
-        self.tile_map = self._reconnect_tiles()
-        ground_surface: Surface = self._generate_ground(self.tile_map)
+        tile_map = self._pregenerate_tile_map(self.height, self.width)
+        tile_map = self._reconnect_tiles(tile_map)
+        ground_surface: Surface = self._generate_ground(tile_map)
         # ground_surface: Surface = self._display_tiles()
-        ground_surface.set_alpha(self.alpha)
-        ground_surface.set_colorkey(Color('black'))
+        ground_surface = self.darken_surface(ground_surface, 0.8) if self.alpha < 255 else ground_surface
 
-        self.image: Surface = Surface(ground_surface.size)
+        self.image: Surface = Surface(ground_surface.size, SRCALPHA)
         self.image.blit(ground_surface)
-        self.image.set_colorkey(Color('black'))
+        self.image = transform.scale_by(self.image, self.scale)
         
         # draw.circle(self.image, Color('red'), (0, 0), radius=3)
         # draw.rect(
@@ -180,5 +180,30 @@ class Ground(sprite.Sprite):
         self.rect: Rect = self.image.get_rect()
         setattr(self.rect, self.anchor, self.position)
         
+    def darken_surface(
+        self,
+        surface: Surface,
+        factor: float,
+    ) -> Surface:
+        darkened_color = (factor * 255, factor * 255, factor * 255, 255)
+        darkened: Surface = Surface(surface.size, SRCALPHA)
+        surface.set_colorkey(darkened_color)
+        darkened.fill(darkened_color)
+        surface.blit(darkened, (0, 0), special_flags= BLEND_RGBA_MULT)
+        return surface
 
-
+    def check_score(
+        self,
+        bird_rect: Rect,
+    ) -> int:
+        if self.rect.left + 128 < bird_rect.left\
+            and bird_rect.right < self.rect.right - 128\
+                and self.pass_check == False:
+                    self.pass_check = True
+                    # print('inside')
+        if self.pass_check == True:
+            if bird_rect.left > self.rect.right - 128:    
+                self.pass_check = False
+                # print('outside')
+                return 1
+        return 0

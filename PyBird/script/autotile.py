@@ -35,15 +35,13 @@ class AutoTile:
     def __init__(
             self,
             tileset: Surface,
-            scale: float,
             tile_mask: List[List[int]],
             mask_template: List[List[int]],
     ):
-        """AutoTile handles automic selection of tiles based on the adjacent tiles
+        """AutoTile handles automatic selection of tiles based on the adjacent tiles
 
         Args:
             tileset (Surface): Surface containing the full tilemap
-            scale (float): Scaling factor for the tiles
             tile_mask (List[List[int]]): 2D grid marking which tiles are used 
             mask_template (List[List[int]]): 2D Template defining 3x3 connectivity for each tile
         """
@@ -52,7 +50,6 @@ class AutoTile:
             self.tileset.width//len(tile_mask[0]), 
             self.tileset.height//len(tile_mask)
         )
-        self.scaled_tile_size: Vector2 = self.tile_size*scale
         self.tiles: List[Tile] = []
 
         self.directions = [
@@ -73,13 +70,12 @@ class AutoTile:
             ]
         ]
 
-        self._generate_tiles(tile_mask, mask_template, scale)
+        self._generate_tiles(tile_mask, mask_template)
 
     def _generate_tiles(
             self,
             tile_mask: List[List[int]],
             mask_template: List[List[int]],
-            scale: float
     ) -> None:
         """Generate tiles Tiles class objects based on tile_mask and mask_template"""
         tile_by_mask: Dict[Tuple, List[Surface]] = {}
@@ -97,7 +93,7 @@ class AutoTile:
                             single_tile_mask.append([0, 0, 0])
 
                     mask_key = tuple(tuple(row) for row in single_tile_mask)
-                    tile_surface = self.make_tile_surface(Vector2(x, y), scale)
+                    tile_surface = self.make_tile_surface(Vector2(x, y))
                     tile_by_mask.setdefault(mask_key, []).append(tile_surface)
                     
         for mask in tile_by_mask.keys():
@@ -107,13 +103,9 @@ class AutoTile:
     def make_tile_surface(
             self,
             position: Vector2,
-            scale: float,
+            scale: float = 1,
     ) -> Surface:
         """Cuts, Scales a Surface from the tilemap to make tile sprite 
-
-        Args:
-            position (Vector2): The tile position in the tileset grid
-
         Returns:
             Surface: The tile sprite as a surface scaled to factor 
         """
@@ -124,13 +116,14 @@ class AutoTile:
             (0, 0),
             (x, y, self.tile_size.x, self.tile_size.y)
         )
-        return transform.scale(tile, (tile.width* scale, tile.height* scale))
+        # return transform.scale(tile, (tile.width* scale, tile.height* scale))
+        return tile
 
     def get_tile(
             self,
             mask: List[List[int]],
     ) -> Surface:
-        """Finds a tile maching a specific 3x3 match
+        """Finds a tile matching a specific 3x3 match
         Returns:
             The matching Tile or None if not found
         """
@@ -139,7 +132,7 @@ class AutoTile:
                 return tile
         return None
 
-    def generate_conectivity_mask(
+    def generate_connectivity_mask(
             self,
             tile_map: List[List[int]],
             position: Vector2,
