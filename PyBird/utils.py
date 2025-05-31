@@ -42,3 +42,7 @@ MASKS = [[int(char) for char in line.replace("\n", "").replace(" ", "")] for lin
 # print(MASKS)
 TILE_SET = image.load('./assets/Retro-Lines-16x16/autotile_tilemap/tilemap.png')
 TILE_SIZE = Vector2(16, 16)
+
+
+def print_text():
+    print("its working properly")

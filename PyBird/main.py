@@ -11,6 +11,8 @@ from script.bird import Bird
 from script.ground_0 import Ground
 from script.text_canvas import text_canvas
 from script.environment import Environment
+from script.menu import Menu
+from script.gameover import GameOver
 
 # decorators
 def debug(
@@ -42,11 +44,16 @@ class PyBird():
         pygame.display.set_caption("PyBird")
         
         self.screen = pygame.display.set_mode(SCREEN_SIZE, pygame.SRCALPHA)
+        self.screen_group = pygame.sprite.Group()
 
-        self._init_gameObjects()
         self.check_index = False 
+        self.isPlaying = False
+        self.is_game_over = False
+        self.highscore = 0
         self.score = 0
         self.speed = 45
+        self.obstacle_gap = 5
+        self._init_gameObjects()
     
     def _init_gameObjects(
         self
@@ -60,11 +67,11 @@ class PyBird():
             anchor = 'center',
             scale = 4
         )
-        
+
         self.environment_group = pygame.sprite.Group()
         self.environment_event = pygame.USEREVENT + abs(hash('environment')) % 1000
         pygame.time.set_timer(self.environment_event, 4000)
-        for _ in range(15):
+        for _ in range(10):
             Environment(
                 self.environment_group,
                 pygame.Vector2(randint(16, WIDTH-16), randint(16, HEIGHT-16)),
@@ -72,29 +79,54 @@ class PyBird():
                 speed= uniform(10.5, 50),
                 frames= BACKGROUND_AIR,
             )
-        
+
         self.ground_group = pygame.sprite.Group()
-        self.new_generate_ground(
-            x_coordinate= WIDTH,
-            ground_group= self.ground_group,
-            scale= 2.0,
-        )
-        ground_signal.connect(
-            lambda: 
-                self.new_generate_ground(
-                    x_coordinate= WIDTH,
-                    ground_group= self.ground_group,
-                    scale= 2.0,
-                )
-        )
-        
+        for i in range(4):
+            self.new_generate_ground(
+                x_coordinate= i*288,
+                ground_group= self.ground_group,
+                gap_in_tiles= 13,
+                scale= 2.0,
+            )
+        if self.isPlaying:
+            gap = None
+        else:
+            gap = 13
+        ground_signal.connect(lambda: self.new_generate_ground(
+            x_coordinate=WIDTH,
+            ground_group=self.ground_group,
+            scale=2.0,
+            **({"gap_in_tiles": gap} if gap is not None else {})
+        ))
+
         self.canvas_group = pygame.sprite.Group()
         self.score_text = text_canvas(
-            self.canvas_group,
+            groups= self.canvas_group,
             position= pygame.Vector2(WIDTH -32, 32),
-            font_size= 50,
             font_path= FONT_PATH,
+            font_size= 50,
             anchor= 'topright'
+        )
+        self.score_text.padding = 5.0
+
+        self.game_over_screen = GameOver(
+            groups= self.screen_group,
+            position= Vector2(WIDTH//2, HEIGHT//2),
+            dimensions= (320, 368),
+            background_color= BACKGROUND_BLACK,
+            anchor= 'center',
+            font_path= FONT_PATH,
+            debug= True
+        )
+        self.screen_group.remove(self.game_over_screen)
+        self.menu_screen = Menu(
+            groups= self.screen_group,
+            position= Vector2(WIDTH//2, HEIGHT//2),
+            dimensions= (640, 480),
+            background_color= BACKGROUND_BLACK,
+            anchor= 'center',
+            font_path= FONT_PATH,
+            debug= True,
         )
     
     # @debug(spacing= 16)
@@ -109,6 +141,7 @@ class PyBird():
         self.bird_group.draw(self.screen)
         self.ground_group.draw(self.screen)
         self.canvas_group.draw(self.screen)
+        self.screen_group.draw(self.screen) 
         
     def handle_input(self) -> None:
         for event in pygame.event.get():
@@ -120,23 +153,25 @@ class PyBird():
                 self.add_air()
         
     def update(self, deltaTime: float) -> None:
+        self.score_text.text = f'Score: {self.score//2}'
+        self.game_over_screen.score_text.text= f"HIGHSCORE:\n{self.highscore}\nSCORE:\n{self.score//2}"
         self.bird_group.update(deltaTime)
         self.environment_group.update(deltaTime)
         self.ground_group.update(deltaTime)
-
+        self.canvas_group.update(deltaTime)
+        self.screen_group.update(deltaTime)
         self._send_ground_signal()
         
-        self.score_text.text = f'Score: {self.score//2}'
-        self.score_text.render()
         for x in self.ground_group.sprites():
-            self.score += x.check_score(self.bird.rect)
+            if self.isPlaying:
+                self.score += x.check_score(self.bird.rect)
     
     def add_air(self) -> None:
         for _ in range(5):
             Environment(
                 self.environment_group,
-                pygame.Vector2(WIDTH+16, randint(16, HEIGHT-16)),
-                anchor='center',
+                pygame.Vector2(WIDTH+randint(0, 16), randint(16, HEIGHT-16)),
+                anchor='topleft',
                 speed= uniform(10.5, 50),
                 frames= BACKGROUND_AIR,
             )
@@ -194,10 +229,7 @@ class PyBird():
         if self.ground_group.sprites():
             last_ground: Ground = self.ground_group.sprites()[-1]
             if int(last_ground.position.x) == WIDTH - last_ground.image.get_width():
-                ground_signal.emit()
-    
-    def print_text(self):
-        print("its working properly")
+                ground_signal.emit() 
 
 async def main() -> None:
     deltaTime: float = 0.0
