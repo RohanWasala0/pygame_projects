@@ -72,9 +72,6 @@ class Paddle(sprite.Sprite):
     def conditions(self):
         self.position.x = math.clamp(self.position.x, self.dimensions[0]//2, display.get_window_size()[0] - (self.dimensions[0]//2))
 
-    def goto_finger_position(self, finger_position_x: float, finger_position_y: float):
-        print(finger_position_x, finger_position_y)    
-
     def reset(self) -> None:
         self.position.y = display.get_window_size()[1]//2
 
