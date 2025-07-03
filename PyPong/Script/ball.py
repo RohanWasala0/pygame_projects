@@ -13,7 +13,7 @@ from pygame import (
     FINGERUP,
 )
 
-from input_manager import InputManager
+from PyGextras import InputManager
 
 from math import radians, sin, cos
 from random import uniform
@@ -43,6 +43,7 @@ class Ball(sprite.Sprite):
 
         self.velocity = Vector2()
         self.speed = 400
+        self.initial_speed = self.speed
         self.start = True
 
         self.input_manager.input_chart = {
@@ -123,6 +124,7 @@ class Ball(sprite.Sprite):
         return Vector2(cos(angle), sin(angle)).normalize() * self.speed
 
     def reset(self) -> None:
+        self.speed = self.initial_speed
         WIDTH, HEIGHT = display.get_window_size()
         self.velocity = Vector2()
         self.position = Vector2(WIDTH//2, HEIGHT//2)

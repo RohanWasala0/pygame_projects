@@ -42,19 +42,17 @@ class InputManager:
         if action := discrete_chart.get('default'):
             action()
 
-        if event_type_action := discrete_chart.get(event.type):
-            action = (
-                event_type_action.get(getattr(event, 'key', None)) or
-                event_type_action.get(getattr(event, 'ui_element', None))
-            ) if isinstance(event_type_action, dict) else event_type_action
+        for key, event_type_action in discrete_chart.items():
+            keys = key if isinstance(key, tuple) else (key,)
 
-            if action:
-                try:
-                    action()
-                    return True
-                except Exception as e:
-                    print(f"Error executing discrete action:{action} with error:{e}")
-                    return False
+            if self.event_type in keys or self.event_key in keys:
+                if callable(event_type_action):
+                    self.execute_action(event_type_action)
+                else:
+                    for keyboard_key, action in event_type_action.items():
+                        keyboard_keys = keyboard_key if isinstance(keyboard_key, tuple) else (keyboard_key, )
+                        if self.event_key in keyboard_keys:
+                            self.execute_action(action)
         return False
 
     def handling_continuous_input(self):
@@ -69,17 +67,7 @@ class InputManager:
         for key, action in continuous_chart.items():
             keys = key if isinstance(key, tuple) else (key,)
             if any(k in keys for k in self.pressed_keys):
-                try:
-                    action()
-                except Exception as e:
-                    print(f"Error executing continuous action '{action}': {e}")
-                
-        # for key in self.pressed_keys:
-        #     if action := continuous_chart.get(key):
-        #         try:
-        #             action()
-        #         except Exception as e:
-        #             print(f"Error executing continuous action '{action}': {e}")
+                self.execute_action(action)
 
     def handling_touch_input(self, event) -> bool:
 
@@ -96,12 +84,7 @@ class InputManager:
         else:
             for item, action in event_type_chart.items():
                 if callable(item):
-                    try:
-                        item()
-                        return True
-                    except Exception as e:
-                        print(f"Error executing discrete action:{action} with error:{e}")
-                        return False
+                    self.execute_action(item)
             
                 elif isinstance(item, tuple) and len(item) == 4:
                     x1, x2, y1, y2 = item 
@@ -114,6 +97,11 @@ class InputManager:
                             return False
         return False
 
+    def execute_action(self, action) -> None:
+        try:
+            action()
+        except Exception as e:
+            print(f"Error executing discrete action:{action} with error:{e}")
 
     def handle_input(self, events, keys) -> None:
         """
@@ -122,6 +110,9 @@ class InputManager:
         """
         # Handle discrete events from input_chart['discrete']
         for event in events:
+            self.event_type = getattr(event, 'type', None)
+            self.event_key = getattr(event, 'key', None)
+            # self.event_ui_elements(event, 'ui_element', None)
             self.handling_discrete_input(event)
             self.handling_touch_input(event)
         

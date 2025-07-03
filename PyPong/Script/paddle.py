@@ -11,10 +11,11 @@ from pygame import (
         mask,
         FINGERMOTION,
     ) 
-from typing import Tuple, Optional
-from input_manager import InputManager
 
-AXIS_SENSITIVITY = 5.0       # Speed of interpolation
+from typing import Tuple, Optional
+from PyGextras import InputManager
+
+AXIS_SENSITIVITY = 8.0       # Speed of interpolation
 AXIS_GRAVITY = 8.0           # Speed of returning to 0
 
 class Paddle(sprite.Sprite):
@@ -40,7 +41,7 @@ class Paddle(sprite.Sprite):
         self.direction: Vector2 = Vector2()
         self.target_direction: Vector2 = Vector2()
         self.velocity: Vector2 = Vector2()
-        self.speed: int = 400
+        self.speed: int = 500
         
         self.input_manager.input_chart = {
             'continuous': {
@@ -60,9 +61,7 @@ class Paddle(sprite.Sprite):
     def update(self, deltaTime: float):
         self.conditions()
 
-        self.direction = Vector2(self.axis_smoothing(self.direction.x, self.target_direction.x, deltaTime), self.axis_smoothing(self.direction.y, self.target_direction.y, deltaTime))
-        self.velocity = self.direction * self.speed
-        self.position = self.position + (self.velocity * deltaTime)
+        self.move(deltaTime)
 
         self.render()
 
@@ -109,3 +108,7 @@ class Paddle(sprite.Sprite):
             value = max(value - delta, target)
 
         return value
+
+    def move(self, deltaTime: float):
+        self.velocity = self.direction * self.speed
+        self.position = self.position + (self.velocity * deltaTime)
