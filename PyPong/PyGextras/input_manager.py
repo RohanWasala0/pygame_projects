@@ -3,6 +3,7 @@ Enhanced InputManager with unified chart and continuous/non-continuous tagging
 """
 
 from typing import Set
+import pygame
 
 class InputManager:
     def __init__(self) -> None:

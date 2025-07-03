@@ -1,3 +1,8 @@
+# /// script
+# dependencies = [
+#   "pygame-ce"
+# ]
+# ///
 import sys, platform
 import asyncio
 import pygame
@@ -64,6 +69,7 @@ class PyPong():
         self.time = 0
         self.ai = False
         self.ai_dead_zone = 40
+        self.layer_offsets = [i * 8 for i in range(3)]
 
         self.hit = pygame.mixer.Sound(HIT)
         self.point = pygame.mixer.Sound(POINT)
@@ -71,7 +77,6 @@ class PyPong():
         self._initialize_text_canvas()
         self._initialize_objects()
         [print(f"{x}") for x in self.screen_group.spritedict]
-        print((keyboard_keys[-1].width*4, keyboard_keys[-1].height*4))
 
         self.screen_input_manager.input_chart = {
             'discrete': {
@@ -139,32 +144,20 @@ class PyPong():
         #     groups= self.screen_group,
         # )
 
-    def animated_background(self, spacing, time) -> None:
-        time = time % spacing
-        grid_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        for index, color in enumerate((PADDLE_BROWN, BALL_GREY, PARTICLES_BEIGE)):
-            for i in range(0, WIDTH, spacing): #vertical lines
-                x = i + time + (index*8)
-                pygame.draw.line(grid_surface, color, (x, 0), (x, HEIGHT))
-            for j in range(0, HEIGHT, spacing):
-                y = j + time + (index*8)
-                pygame.draw.line(grid_surface, color, (0, y), (WIDTH, y))
-        grid_surface.set_alpha(60)
-        return grid_surface
 
-    @debug(WIDTH, HEIGHT)
+    # @debug(WIDTH, HEIGHT)
     def render(
         self,
         debug_surface:pygame.Surface = None,
     ) -> None:
         self.screen.fill(BACKGROUND_BLACK)
         self.screen.blit(debug_surface, (0, 0)) if debug_surface else None
-        animated_texture = self.animated_background(40, self.time)
-        self.screen.blit(animated_texture, (0, 0)) if not debug_surface else None
+        animated_texture = self.animated_background(40)
+        self.screen.blit(animated_texture, (0, 0))
 
         self.dotted_line(self.screen)
-        self.screen.blit(pygame.transform.scale(keyboard_keys[-1], (keyboard_keys[-1].width*4, keyboard_keys[-1].height*4)), (4*40, 0))
-        self.screen.blit(pygame.transform.scale(keyboard_keys[-3], (keyboard_keys[-3].width*4, keyboard_keys[-3].height*4)), keyboard_keys[-3].get_rect(topright=(WIDTH-5*40, 0)))
+        self.screen.blit(pygame.transform.scale(keyboard_keys[-1], (keyboard_keys[-1].get_width()*4, keyboard_keys[-1].get_height()*4)), (4*40, 0))
+        self.screen.blit(pygame.transform.scale(keyboard_keys[-3], (keyboard_keys[-3].get_width()*4, keyboard_keys[-3].get_height()*4)), keyboard_keys[-3].get_rect(topright=(WIDTH-5*40, 0)))
 
         self.ball.draw_trail(self.screen)
         self.screen_group.draw(self.screen)
@@ -172,7 +165,7 @@ class PyPong():
         # self.screen_group.add(self.settings_menu)
         self.menu_group.draw(self.screen) 
 
-        self.display.blit(self.screen)
+        self.display.blit(self.screen, (0, 0))
 
     def handle_input(self) -> None:
         events = pygame.event.get()
@@ -189,13 +182,36 @@ class PyPong():
         self.select_in_menu() if self.settings_menu.touched else None
 
     def update(self, deltaTime: float) -> None:
-
         self.time += 40 * deltaTime
+
         self.move_ai(deltaTime)
         self.screen_group.update(deltaTime)
         self.menu_group.update(deltaTime) 
         self.paddle_collision()
         self.point_scored()
+
+    def animated_background(self, spacing: int) -> None:
+        animation_offset = self.time % spacing
+        grid_surface = pygame.Surface((WIDTH, HEIGHT))
+        grid_surface.fill((0, 0, 0, 0))
+        for layer_index, color in enumerate((PADDLE_BROWN, BALL_GREY, PARTICLES_BEIGE)):
+            layer_offset = self.layer_offsets[layer_index]
+            x = animation_offset + layer_offset
+            while x < WIDTH + spacing:  # Draw extra lines for smooth scrolling
+                if x >= -spacing:  # Only draw visible lines
+                    pygame.draw.line(grid_surface, color, (x, 0), (x, HEIGHT))
+                x += spacing
+            y = animation_offset + layer_offset
+            while y < HEIGHT + spacing:  # Draw extra lines for smooth scrolling
+                if y >= -spacing:  # Only draw visible lines
+                    pygame.draw.line(grid_surface, color, (0, y), (WIDTH, y))
+                y += spacing
+        
+        # Apply transparency
+        # grid_surface.set_alpha(60)
+        grid_surface = self.blur(grid_surface, 0.5)
+        
+        return grid_surface
 
     def paddle_collision(self) -> None:
 
@@ -245,13 +261,13 @@ class PyPong():
     def quit(self):
         print('Shutting Down')
         pygame.quit()
-        sys.exit()
+        # sys.exit()
 
     def blur(self, surface: pygame.Surface, factor: float = 0.25) -> pygame.Surface:
         if not (0 < factor < 1):
             raise ValueError("factor should in between 0 - 1")
 
-        small_size = (max(1, int(surface.width * factor)),max(1, int(surface.height * factor)))
+        small_size = (max(1, int(surface.get_width() * factor)),max(1, int(surface.get_height() * factor)))
         
         small = pygame.transform.smoothscale(surface, small_size)
         result = pygame.transform.smoothscale(small, surface.get_size())
@@ -324,7 +340,7 @@ class PyPong():
 
     def touch_controls(self):
         touch = pygame.sprite.Sprite()
-        touch.image = pygame.Surface(self.screen.size, pygame.SRCALPHA)
+        touch.image = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         pygame.draw.rect(
             touch.image,
             pygame.Color('white'),
@@ -371,7 +387,7 @@ class PyPong():
 
     def keyboard_controls(self):
         _keyboard = pygame.sprite.Sprite()
-        _keyboard.image = pygame.Surface(self.screen.size, pygame.SRCALPHA)
+        _keyboard.image = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
 
         _keyboard.image.blit(pygame.transform.scale(keyboard_keys[38], (42, 42)), (40, 40*9))
         _keyboard.image.blit(pygame.transform.scale(keyboard_keys[34], (42, 42)), (40, 40*9 + 42))
@@ -383,7 +399,7 @@ class PyPong():
         _keyboard.image.blit(pygame.transform.scale(keyboard_keys[-2], (42, 42)), (14*40 - 42, 40*9 + 42))
         _keyboard.image.blit(pygame.transform.scale(keyboard_keys[-2], (42, 42)), (14*40 + 42, 40*9 + 42))
 
-        _keyboard.image.blit(pygame.transform.scale(space_key, (space_key.width*3, 42)), (6*40 - 20, 40*9))
+        _keyboard.image.blit(pygame.transform.scale(space_key, (space_key.get_width()*3, 42)), (6*40 - 20, 40*9))
         tc(
             f"[text: To Play][position: 9*40 + 20, 40*9 + 20]",
             self.screen_group, FONT_PATH, 15, 'keyboard controls', 'center')
@@ -393,7 +409,7 @@ class PyPong():
             f"[text: To Reset][position: 2*40, 10]",
             self.screen_group, FONT_PATH, 15, 'keyboard controls')
 
-        _keyboard.image.blit(pygame.transform.scale(escape_key, (escape_key.width*3, 42)), (14*40 - 20, 0))
+        _keyboard.image.blit(pygame.transform.scale(escape_key, (escape_key.get_width()*3, 42)), (14*40 - 20, 0))
         tc(
             f"[text: To Menu][position: 11*40 - 10, 10]",
             self.screen_group, FONT_PATH, 15, 'keyboard controls')

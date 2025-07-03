@@ -127,7 +127,7 @@ class TextCanvas(sprite.Sprite):
         self.image = self.effects(self.effects_list)
         # self.image.fill(self.background_color)
         # self.image.set_colorkey(Color('black'))
-        self.image.blit(self.rendered_text)
+        # self.image.blit(self.rendered_text)
         
         draw.rect(
             self.image,
@@ -142,18 +142,18 @@ class TextCanvas(sprite.Sprite):
 
     def calculate_size(self, offset: Vector2) -> Tuple[int, int]:
         surface_list = self.text.split('\n')
-        width = max(sum(self.letters[letter].width for letter in line) for line in surface_list)
+        width = max(sum(self.letters[letter].get_width() for letter in line) for line in surface_list)
         width += 2 * self.margin + 2 * self.border_width + 2 * self.padding 
 
         y_offset = (self.border_width + 2*self.padding)
         height = 2*self.margin + self.border_width
-        height += sum(max(self.letters[letter].height for letter in line) + y_offset for line in surface_list) + 2*offset.y
+        height += sum(max(self.letters[letter].get_height() for letter in line) + y_offset for line in surface_list) + 2*offset.y
 
         return width, height
 
     def effects(self, effects_list: List[str]) -> Surface:
         def shadow(surface: Surface, color: Color, offset: Vector2 = Vector2(0, 1)):
-            result_surface = Surface((surface.width + 2, surface.height + 2))
+            result_surface = Surface((surface.get_width() + 2, surface.get_height() + 2))
             result_surface.set_colorkey((0, 0, 0))
 
             _mask = mask.from_surface(surface)
@@ -182,9 +182,9 @@ class TextCanvas(sprite.Sprite):
                 # result_rect = self.letters[letter].get_rect(topleft = Vector2(start_position.x, start_position.y))
 
                 rendered_text.blit(result_surface, result_position)
-                start_position.x += self.letters[letter].width
+                start_position.x += self.letters[letter].get_width()
 
             start_position.x = self.border_width + self.padding + self.margin
-            start_position.y += result_surface.height + 2*self.padding + self.border_width # move to next line
+            start_position.y += result_surface.get_height() + 2*self.padding + self.border_width # move to next line
 
         return rendered_text

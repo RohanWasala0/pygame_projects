@@ -74,7 +74,7 @@ class Settings(sprite.Sprite):
         self.image.fill(Color('black'))
         self.image.fill(self.color)
 
-        self.debug(40, self.image)
+        # self.debug(40, self.image)
         self.canvas_group.draw(self.image)
         self.image.blit(
             transform.scale(keyboard_keys[0], (38, 38)),
@@ -140,7 +140,7 @@ class Settings(sprite.Sprite):
         ) if self.current_selection == self.two_player else None
 
         self.image.blit(
-            transform.scale(logo, (logo.width/2.75, logo.height/2.75)),
+            transform.scale(logo, (logo.get_width()/2.75, logo.get_height()/2.75)),
             (7*40, 8*40)
         )
 
@@ -274,9 +274,9 @@ class Settings(sprite.Sprite):
         for i, x in enumerate(list_of_controls):
             # print(x.position)
             x1 = round(x.rect.x / self.dimensions[0], 4)
-            x2 = round((x.rect.x + x.image.width)/self.dimensions[0], 4)
+            x2 = round((x.rect.x + x.image.get_width())/self.dimensions[0], 4)
             y1 = round(x.rect.y/self.dimensions[1], 4)
-            y2 = round((x.rect.y + x.image.height)/self.dimensions[1], 4)
+            y2 = round((x.rect.y + x.image.get_height())/self.dimensions[1], 4)
             def create_touch_handler(target_canvas):
                 return lambda event: self.move_to_selected(target_canvas)
             
