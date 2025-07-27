@@ -53,7 +53,7 @@ class Ball(sprite.Sprite):
                 }
             },
             'touch': {
-                    FINGERUP: lambda event: setattr(self, 'velocity', self.rand_velocity())
+                    FINGERUP: {(0.25, 0.75, 0.25, 0.75): lambda event: setattr(self, 'velocity', self.rand_velocity())}
                 }
 
         }
