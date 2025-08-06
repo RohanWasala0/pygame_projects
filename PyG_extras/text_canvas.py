@@ -4,6 +4,7 @@ from pygame import sprite, Vector2, draw, Color, Surface, Rect, event, font, mas
 from typing import Tuple, Optional, Dict, List
 import pygame.freetype as ft
 import math
+from .entity import Entity
 global alphabet
 
 alphabet = [
@@ -12,15 +13,28 @@ alphabet = [
     "u", "v", "w", "x", "y", "z", ".", "-", ",", ":", "'", "!", "?", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
     " ", "(", ")", "+", "/", "%",
 ]
-class TextCanvas(sprite.Sprite):
+class TextCanvas(Entity):
+    '''
+        [size: int] font_size: int,\n
+        [color: str] color: Color = Color('white'),\n
+        [bg_color: sr] background_color: Color = Color('black'),\n
+        [align: left|center|right] align: str = 'center'\n
+        [text: str] text: str = 'Testing',\n
+        [position: float,float] position: Vector2 = Vector2(), \n
+        [padding: int] padding: int = 1\n
+        [border: int] border_width: int = 1\n
+        [margin: int] margin: int = 1\n
+        [show_border: 1|0] show: int= 1\n
+        [effect: ] effect: str = None available ['shadow', 'sin_letter']\n
+    '''
     def __init__(
         self,
         raw: str,
-        groups: sprite.Group = {},
-        font_path: str = None,
+        *groups: sprite.Group,
+        font_path: str = '',
         anchor: str = 'topleft',
     ) -> None:
-        super().__init__(groups)
+        super().__init__(*groups)
 
         self.anchor: str = anchor
 
@@ -34,6 +48,7 @@ class TextCanvas(sprite.Sprite):
         self.border_width: float = 0
         self.margin: float = 0
         self.debug = 0
+        self.rendered_text: Surface = Surface((0, 0))
 
         self.time = 0
 
@@ -41,9 +56,7 @@ class TextCanvas(sprite.Sprite):
         self._parse(raw)
         self.initial_position = self.position.copy()
         self._init_font(font_path)
-        
-        self.rendered_text: Surface = Surface((0, 0))
-        print(self.rendered_text.size)
+
         self.render()
 
     def _init_font(self, font_path):
@@ -61,19 +74,6 @@ class TextCanvas(sprite.Sprite):
         self,
         raw: str,
     ) -> None:
-        '''
-            [size: int] font_size: int,
-            [color: str] color: Color = Color('white'),
-            [bg_color: sr] background_color: Color = Color('black'),
-            [align: left|center|right] align: str = 'center'
-            [text: str] text: str = 'Testing',
-            [position: float,float] position: Vector2 = Vector2(), 
-            [padding: int] padding: int = 1
-            [border: int] border_width: int = 1
-            [margin: int] margin: int = 1
-            [show_border: 1|0] show: int= 1
-            [effect: ] effect: str = None
-        '''
         def _position(value: str):
             x, y = map(str, value.strip().split(','))
             x = eval(x, {"__builtins__": None}, {})
@@ -88,7 +88,6 @@ class TextCanvas(sprite.Sprite):
         def _effect(value: str):
             for e in value.strip().split(','):
                 self.effects_list.append(e.strip())
-            print(self.effects_list)
 
         pattern = re.compile(r"\[(\w+):\s*([^\]]+)\]")
         matches = pattern.findall(raw)
@@ -119,11 +118,11 @@ class TextCanvas(sprite.Sprite):
         self.render()
 
     def render(self): 
+        self.image.fill(Color('red'))
         self.image = self.rendered_text.copy()
-        # self.image.fill(self.background_color)
-        # self.image.set_colorkey(Color('black'))
+        self.image.set_colorkey(Color('black'))
         self.image.blit(self.rendered_text)
-        
+
         draw.rect(
             self.image,
             Color('white'),
@@ -135,7 +134,7 @@ class TextCanvas(sprite.Sprite):
         self.rect = self.image.get_rect()
         setattr(self.rect, self.anchor, self.position)
 
-    def calculate_size(self, offset: Vector2) -> Tuple[int, int]:
+    def calculate_size(self, offset: Vector2) -> Tuple[float, float]:
         surface_list = self.text.split('\n')
         width = max(sum(self.letters[letter].width for letter in line) for line in surface_list)
         width += 2 * self.margin + 2 * self.border_width + 2 * self.padding 

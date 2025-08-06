@@ -16,7 +16,7 @@ class Game:
         pygame.display.set_caption("Game")
 
         #system variables 
-        self.font = ft.Font('.\SixtyfourConvergence-Regular-VariableFont_BLED,SCAN,XELA,YELA.ttf',20)
+        self.font = ft.Font('./04B_03__.TTF', 20)
         self.screen = pygame.display.set_mode((Screen_DIMENSIONS[0], Screen_DIMENSIONS[1]))
         self.clock = pygame.time.Clock()
         self.deltaTime = 0
@@ -33,11 +33,11 @@ class Game:
         for x in range(self.noBirds):
             randDir = pygame.Vector2(uniform(-1, 1), uniform(-1, 1))
             Entity(tag=f"bird{x}",
-                   groups=self.entityGroup, 
-                   position=pygame.Vector2(randint(100, WIDTH-100), randint(100, HEIGHT-100)),
-                   direction=randDir.normalize(),
-                   entitySize=(20, 20),
-                   color=pygame.Color('white'))
+                    groups=self.entityGroup, 
+                    position=pygame.Vector2(randint(100, WIDTH-100), randint(100, HEIGHT-100)),
+                    direction=randDir.normalize(),
+                    entitySize=(20, 20),
+                    color=pygame.Color('white'))
             
         #Render UI for weight
         self.renderMenu()
@@ -62,8 +62,7 @@ class Game:
         self.entityGroup.draw(self.screen)
         self.UIManager.draw_ui(self.screen)
 
-          
-    def eventHandling(self, event: pygame.event):
+    def eventHandling(self, event: pygame.event.Event):
         for x in self.entityGroup.sprites():
             x.handleInput(event)
             
@@ -75,10 +74,7 @@ class Game:
             for y in self.entityGroup.sprites():
                 y.weights = self.weights
             self.changeWeights = False
-  
 
-
-    
     def update(self):
         self.entityGroup.update(self.deltaTime, targetPos=pygame.Vector2(pygame.mouse.get_pos()))
 
@@ -111,7 +107,7 @@ class Game:
         self.separation_weight_slider = pygame_gui.elements.UIHorizontalSlider(
             relative_rect=pygame.Rect((0, HEIGHT - 70), ((WIDTH//3), 30)),
             start_value=1.5,
-            value_range=[0, 5],
+            value_range=(0, 5),
             manager=self.UIManager,
             click_increment=0.5,
         )
@@ -124,7 +120,7 @@ class Game:
         self.alignment_weight_silder = pygame_gui.elements.UIHorizontalSlider(
             relative_rect=pygame.Rect(((WIDTH//3), HEIGHT - 70), ((WIDTH//3), 30)),
             start_value=1.0,
-            value_range=[0, 5],
+            value_range=(0, 5),
             manager=self.UIManager,
             click_increment=0.5,
         )
@@ -137,7 +133,7 @@ class Game:
         self.cohesion_weight_silder = pygame_gui.elements.UIHorizontalSlider(
             relative_rect=pygame.Rect((WIDTH-(WIDTH//3), HEIGHT - 70), ((WIDTH//3), 30)),
             start_value=1.0,
-            value_range=[0, 5],
+            value_range=(0, 5),
             manager=self.UIManager,
             click_increment=0.5,
         )

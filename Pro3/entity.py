@@ -60,7 +60,7 @@ class Entity(sprite.Sprite):
         from random import uniform
         return uniform(self.min_speed, self.max_speed)
     
-    def update(self, deltaTime: float, targetPos: Vector2 = None):
+    def update(self, deltaTime: float, targetPos: Vector2 | None):
         # Calculate flocking forces
         separation = self.separation() * self.separation_weight
         alignment = self.alignment() * self.alignment_weight
@@ -92,7 +92,7 @@ class Entity(sprite.Sprite):
         self.image = transform.rotate(self.ogImage, angle)
         self.rect = self.image.get_rect(center=self.position)
     
-    def handleInput(self, event: event) -> None:
+    def handleInput(self, event: event.Event) -> None:
         #Handle input events 
         if hasattr(event, 'type') and event.type in self.inputChart:
             if hasattr(event, 'key') and event.key in self.inputChart[event.type]:    
@@ -202,7 +202,7 @@ class Entity(sprite.Sprite):
             
         return Vector2(0, 0)
     
-    def set_target(self, target_position: Vector2 | tuple, enable_seeking: bool = True):
+    def set_target(self, target_position: Vector2 | tuple | None, enable_seeking: bool = True):
         """Set a target position for the entity to seek"""
         if isinstance(target_position, tuple):
             target_position = Vector2(target_position)

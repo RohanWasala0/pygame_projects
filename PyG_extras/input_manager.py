@@ -1,21 +1,22 @@
 """
 Enhanced InputManager with unified chart and continuous/non-continuous tagging
 """
-
 from typing import Set
 
 class InputManager:
-    def __init__(self) -> None:
-        self.input_chart = {
-            'discrete': {},
-            'continuous': {},
-            'touch': {},
-        }
+    def __init__(
+        self,
+        events,
+        keys,
+        input_chart,
+    ) -> None:
+        self.input_chart = input_chart
 
         self.pressed_keys: Set[int] = set()
         self.previous_keys: Set[int] = set()
 
         self.enabled = True
+        self.handle_input(events, keys)
 
     def update_pressed_keys(self, pressed) -> None:
         """
@@ -115,7 +116,7 @@ class InputManager:
             # self.event_ui_elements(event, 'ui_element', None)
             self.handling_discrete_input(event)
             self.handling_touch_input(event)
-        
+
         # Handle continuous input from input_chart['continuous']
         self.update_pressed_keys(keys)
         self.handling_continuous_input()   

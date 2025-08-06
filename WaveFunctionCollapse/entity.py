@@ -19,7 +19,7 @@ class Entity(sprite.Sprite):
         self.collapsed = False
         self.options = []
         
-        self.image = Surface((self.entitySize, self.entitySize)).convert_alpha()
+        self.image: Surface = Surface((self.entitySize, self.entitySize)).convert_alpha()
         self.image.set_colorkey(Color('black'))
         self.render(pattern)
         self.rect = self.image.get_rect()
@@ -46,4 +46,3 @@ class Entity(sprite.Sprite):
             color=self.color,
             pattern=self.pattern
         )
-         

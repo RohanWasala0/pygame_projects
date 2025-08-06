@@ -1,0 +1,14 @@
+README.md
+setup.py
+PyG_extras/__init__.py
+PyG_extras/entity.py
+PyG_extras/game_loop.py
+PyG_extras/input_manager.py
+PyG_extras/manager.py
+PyG_extras/render.py
+PyG_extras/text_canvas.py
+PyG_extras/update.py
+PyG_extras.egg-info/PKG-INFO
+PyG_extras.egg-info/SOURCES.txt
+PyG_extras.egg-info/dependency_links.txt
+PyG_extras.egg-info/top_level.txt

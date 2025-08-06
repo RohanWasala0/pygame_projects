@@ -429,7 +429,7 @@ class PyPong():
         x_player1 = self.player1.axis_smoothing(self.player1.direction.x, self.player1.target_direction.x, deltaTime)
         y_player1 = self.player1.axis_smoothing(self.player1.direction.y, self.player1.target_direction.y, deltaTime) 
         self.player1.direction = Vector2(x_player1, y_player1)
-        
+
 async def main() -> None:
     deltaTime: float = 0.0
     clock = pygame.time.Clock()
